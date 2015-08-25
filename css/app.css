@@ -1,0 +1,11 @@
+#map {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+}
+
+.queries {
+    margin-top: 20px;
+    margin-left: 20px;
+}
