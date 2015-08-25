@@ -1,11 +1,21 @@
-#map {
-    width: 100%;
-    position: fixed;
-    top: 0;
-    bottom: 0;
-}
-
 .queries {
     margin-top: 20px;
     margin-left: 20px;
+}
+
+#map {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 40%;
+}
+
+.left {
+    position: absolute;
+    bottom: 0px;
+    top: 0px;
+    left: 0px;
+    width: 40%;
+    min-width: 400px;
 }
