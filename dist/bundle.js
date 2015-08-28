@@ -13,28 +13,40 @@ var osmData = {
 var formData = {};
 
 var head = '[out:json];'
-var q = head+"node(user:'%s')%s(%s);out;";
+var q = head+"node(user:'%s')%s%s(%s);out;";
 
 function queryOverpass (u, callback) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
     var overpassDate = '';
+    var overpassFilter = '';
     if (formData.fromDate != '' && formData.toDate != '') {
         overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
     } else if (formData.fromDate != '' && formData.toDate === '') {
         overpassDate = "(changed:'"+formData.fromDate+"')";
     }
-    console.log(util.format(q, u, overpassDate, overpassBbox));
+    if (formData.tags.length && formData.tags[0] != '') {
+        formData.tags.forEach(function (tag) {
+            var key = tag.split('=')[0];
+            var value = tag.split('=')[1];
+            console.log(value);
+            if (value === undefined) {
+                console.log('here')
+                overpassFilter = overpassFilter+"['"+key+"']";
+            } else {
+                overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
+            }
+        });
+    }
+    var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
     $('.loading').css('display', 'inline-block');
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+util.format(q, u, overpassDate, overpassBbox);
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
     $.ajax(url)
         .done(function(data) {
             console.log(data);
             var geojson = osmtogeojson(data);
             callback(null, geojson);
         });
-    // query_overpass(util.format(q, u, overpassDate, overpassBbox), function (err, data) {
-    // }, {'overpassUrl': 'http://overpass.osm.rambler.ru/cgi/interpreter'});
 }
 
 function errorNotice (message) {
@@ -60,18 +72,14 @@ $('.button').on('click', function() {
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
-        // offer to download
-        console.log('results', results);
         Array.prototype.push.apply(osmData.features, results[0].features);
         console.log('all results in', osmData);
         var json = JSON.stringify(osmData);
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
-        // console.log(url);
         $('#download').css('display', 'inline-block');
         $('#download').attr('href', url);
         $('.loading').css('display', 'none');
-        // L.geoJson(osmData).addTo(map);
     });
     console.log(formData);
 });
