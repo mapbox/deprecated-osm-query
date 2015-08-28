@@ -25,6 +25,7 @@ function queryOverpass (u, callback) {
         overpassDate = "(changed:'"+formData.fromDate+"')";
     }
     console.log(util.format(q, u, overpassDate, overpassBbox));
+    $('.loading').css('display', 'inline-block');
     query_overpass(util.format(q, u, overpassDate, overpassBbox), function (err, data) {
         Array.prototype.push.apply(osmData.features, data.features);
         callback(null, u);
@@ -62,6 +63,7 @@ $('.button').on('click', function() {
         // console.log(url);
         $('#download').css('display', 'inline-block');
         $('#download').attr('href', url);
+        $('.loading').css('display', 'none');
         // L.geoJson(osmData).addTo(map);
     });
     console.log(formData);
