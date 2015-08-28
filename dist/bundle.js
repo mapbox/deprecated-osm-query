@@ -13,12 +13,17 @@ var osmData = {
 var formData = {};
 
 var head = '[out:json];'
-var q = head+"node(user:'%s')(changed:'%s')(%s);out;";
+var q = head+"node(user:'%s')%s(%s);out;";
 
 function queryOverpass (u, callback) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
-    var overpassDate = formData.fromDate+','+formData.toDate;
+    var overpassDate = '';
+    if (formData.fromDate != '' && formData.toDate != '') {
+        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
+    } else if (formData.fromDate != '' && formData.toDate === '') {
+        overpassDate = "(changed:'"+formData.fromDate+"')";
+    }
     console.log(util.format(q, u, overpassDate, overpassBbox));
     query_overpass(util.format(q, u, overpassDate, overpassBbox), function (err, data) {
         Array.prototype.push.apply(osmData.features, data.features);
@@ -39,8 +44,8 @@ $('.button').on('click', function() {
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': new Date($('#fromdate').val()).toISOString(),
-        'toDate': new Date($('#todate').val()).toISOString()
+        'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
+        'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
 
     if (formData.users.length && formData.users[0] == '') {
