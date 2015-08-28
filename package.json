@@ -19,7 +19,7 @@
   "dependencies": {
     "async": "^1.4.2",
     "browserify": "^11.0.1",
-    "query-overpass": "^1.0.0",
+    "osmtogeojson": "^2.2.5",
     "underscore": "^1.8.3"
   }
 }

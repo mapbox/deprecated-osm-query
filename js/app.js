@@ -1,4 +1,4 @@
-var query_overpass = require('query-overpass');
+var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
@@ -25,10 +25,13 @@ function queryOverpass (u, callback) {
     }
     console.log(util.format(q, u, overpassDate, overpassBbox));
     $('.loading').css('display', 'inline-block');
-    query_overpass(util.format(q, u, overpassDate, overpassBbox), function (err, data) {
-        Array.prototype.push.apply(osmData.features, data.features);
-        callback(null, u);
-    }, {'overpassUrl': 'http://overpass.osm.rambler.ru/cgi/interpreter'});
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+util.format(q, u, overpassDate, overpassBbox);
+    $.ajax(url)
+        .done(function(data) {
+            console.log(data);
+            var geojson = osmtogeojson(data);
+            callback(null, geojson);
+        });
 }
 
 function errorNotice (message) {
@@ -54,16 +57,14 @@ $('.button').on('click', function() {
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
-        // offer to download
+        Array.prototype.push.apply(osmData.features, results[0].features);
         console.log('all results in', osmData);
         var json = JSON.stringify(osmData);
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
-        // console.log(url);
         $('#download').css('display', 'inline-block');
         $('#download').attr('href', url);
         $('.loading').css('display', 'none');
-        // L.geoJson(osmData).addTo(map);
     });
     console.log(formData);
 });
