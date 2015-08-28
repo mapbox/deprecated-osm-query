@@ -28,7 +28,7 @@ function queryOverpass (u, callback) {
     query_overpass(util.format(q, u, overpassDate, overpassBbox), function (err, data) {
         Array.prototype.push.apply(osmData.features, data.features);
         callback(null, u);
-    });
+    }, {'overpass-url': 'http://overpass.osm.rambler.ru/cgi/'});
 }
 
 function errorNotice (message) {
