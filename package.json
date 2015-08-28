@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/mapbox/osm-query",
   "dependencies": {
+    "async": "^1.4.2",
     "browserify": "^11.0.1",
-    "query-overpass": "^1.0.0"
+    "query-overpass": "^1.0.0",
+    "underscore": "^1.8.3"
   }
 }

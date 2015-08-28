@@ -3,38 +3,45 @@
 <head>
     <title>osm-query</title>
     <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.js'></script>
     <link href='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.css' rel='stylesheet' />
     <link rel="stylesheet" type="text/css" href="css/app.css">
 </head>
 <body>
     <div class='left queries'>
-        <form>
-            <fieldset>
-                <label>Comma separated list of usernames</label>
-                <textarea name=''></textarea>
-            </fieldset>
+        <div class='note error col11 pad1x' style='display:none'>
+          <p></p>
+      </div>
+      <form>
+        <fieldset>
+            <label>Comma separated list of usernames</label>
+            <textarea id='usernames' name=''></textarea>
+        </fieldset>
 
-            <fieldset>
-                <label>Tags</label>
-                <textarea name=''></textarea>
-            </fieldset>                    
+        <fieldset>
+            <label>Tags</label>
+            <textarea id='tags' name=''></textarea>
+        </fieldset>                    
 
-            <fieldset class='col6'>
-                <label>From</label>
-                <input type='date' placeholder='yyyy-mm-dd' />
-            </fieldset>
+        <fieldset class='col6'>
+            <label>From</label>
+            <input id='fromdate' type='date' placeholder='yyyy-mm-dd' />
+        </fieldset>
 
-            <fieldset class='col6'>
-                <label>To</label>
-                <input type='date' placeholder='yyyy-mm-dd' />
-            </fieldset>
+        <fieldset class='col6'>
+            <label>To</label>
+            <input id='todate' type='date' placeholder='yyyy-mm-dd' />
+        </fieldset>
 
-            <input type='button' class='button' value='Submit' name='' />
-        </form>
+        <div class='col6'>
+            <a href='#' class='button'>Submit</a>
+            <a href='#' target='_blank' class='button fill-green' id='download' style='display:none'>Download</a>
+        </div>
+    </form>
 
-    </div>
-    <div id='map'></div>
+</div>
+<div id='map'></div>
 </body>
 <script src="dist/bundle.js"></script>
 </html>
