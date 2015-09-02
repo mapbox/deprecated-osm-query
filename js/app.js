@@ -65,6 +65,8 @@ $('.button').on('click', function() {
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
 
+
+
     if (formData.users.length && formData.users[0] == '') {
         errorNotice('Specify at least one username');
         return;
@@ -74,11 +76,24 @@ $('.button').on('click', function() {
         Array.prototype.push.apply(osmData.features, results[0].features);
         console.log('all results in', osmData);
         var json = JSON.stringify(osmData);
+    
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
+
         $('#download').css('display', 'inline-block');
         $('#download').attr('href', url);
+
         $('.loading').css('display', 'none');
+        $('.count').css('display', 'block');
+        var nodes = document.getElementById('nodes');
+var ways = document.getElementById('ways');
+
+          //var count = document.createElement('div');
+          //count.setAttribute('class','col6');
+        
+          nodes.innerHTML =  osmData.features.length;
+           ways.innerHTML ;
+       
     });
     console.log(formData);
 });

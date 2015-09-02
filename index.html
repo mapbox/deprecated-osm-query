@@ -9,11 +9,12 @@
     <link rel="stylesheet" type="text/css" href="css/app.css">
 </head>
 <body>
-    <div class='left queries'>
+    <div class='queries'>
         <div class='note error col11 pad1x' style='display:none'>
           <p></p>
       </div>
-      <form>
+
+      <form id='QueryForm'>
         <fieldset>
             <label>Comma separated list of usernames</label>
             <textarea id='usernames' name=''></textarea>
@@ -24,14 +25,14 @@
             <textarea id='tags' name=''></textarea>
         </fieldset>                    
 
-        <fieldset class='col6'>
+        <fieldset class='col6' >
             <label>From</label>
-            <input id='fromdate' type='date' placeholder='yyyy-mm-dd' />
+            <input id='fromdate' type='datetime-local' placeholder='yyyy-MM-ddTHH:mm:ss' />
         </fieldset>
-
-        <fieldset class='col6'>
+      </br>
+        <fieldset class='col6' >
             <label>To</label>
-            <input id='todate' type='date' placeholder='yyyy-mm-dd' />
+            <input id='todate' type='datetime-local' placeholder='yyyy-MM-ddTHH:mm:ss' />
         </fieldset>
 
         <div class='col6'>
@@ -39,8 +40,23 @@
             <a href='#' class='button'>Submit</a>
             <a href='#' target='_blank' class='button fill-green' id='download' style='display:none'>Download</a>
         </div>
+
+        
     </form>
 
+</div>
+
+<div class="count" style='display:none'>
+    <table style="width:200%">
+  <tr>
+    <td>Nodes </td>
+    <td id="nodes"></td>
+  </tr>
+   <tr >
+    <td>Ways </td>
+     <td id="ways"></td>
+  </tr>
+</table>
 </div>
 <div id='map'></div>
 </body>
