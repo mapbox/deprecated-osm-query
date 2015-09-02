@@ -2,7 +2,25 @@
     margin-top: 20px;
     margin-left: 20px;
     padding-right: 20px;
+    float: left;
 }
+
+
+
+.count {
+    display: block;
+    clear: left;
+   float: left;
+   margin-top: 50px;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+table{
+   border: 2px solid black;
+    
+  
+} 
 
 #map {
     position: absolute;
@@ -10,6 +28,7 @@
     bottom: 0px;
     right: 0px;
     left: 30%;
+
 }
 
 .left {
