@@ -7,20 +7,17 @@
 
 
 
-.count {
+#count {
     display: block;
     clear: left;
    float: left;
    margin-top: 50px;
     margin-left: 20px;
     margin-right: 20px;
+
 }
 
-table{
-   border: 2px solid black;
-    
-  
-} 
+
 
 #map {
     position: absolute;

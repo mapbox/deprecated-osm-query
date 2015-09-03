@@ -4,10 +4,7 @@ var async = require('async');
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
 var map = L.mapbox.map('map', 'mapbox.streets');
 
-var osmData = {
-    'type': "FeatureCollection",
-    'features': []
-};
+var osmData = {};
 
 var formData = {};
 
@@ -56,8 +53,47 @@ function errorNotice (message) {
     }, 2000);
 
 }
+function tableCreate(userList,userCount) {
+    
+
+var count = document.getElementById('countbody');
+if (count)
+{
+var tableRows = count.getElementsByTagName('tr');
+var rowCount = tableRows.length;
+
+for (var x=rowCount-1; x>=0; x--) {
+
+   count.removeChild(tableRows[x]);
+}
+}
+    var tblbody = document.createElement('tbody');
+  tblbody.setAttribute('id','countbody');
+
+    for (var i = 0; i < userList.length; i++)
+    {
+        var tblrow = document.createElement('tr');
+   
+   tblrow.innerHTML = userList[i];
+   var tblcol = document.createElement('td');
+   tblcol.innerHTML = userCount[i].features.length;
+   tblrow.appendChild(tblcol);
+  tblbody.appendChild(tblrow);
+  counttable.appendChild(tblbody);
+  
+  }
+  
+
+}
 
 $('.button').on('click', function() {
+$('#count').css('display', 'none');
+
+
+    osmData = {
+    'type': "FeatureCollection",
+    'features': []
+}
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
@@ -73,27 +109,24 @@ $('.button').on('click', function() {
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
+        /*
         Array.prototype.push.apply(osmData.features, results[0].features);
-        console.log('all results in', osmData);
+       
         var json = JSON.stringify(osmData);
-    
+
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
 
         $('#download').css('display', 'inline-block');
         $('#download').attr('href', url);
 
-        $('.loading').css('display', 'none');
-        $('.count').css('display', 'block');
-        var nodes = document.getElementById('nodes');
-var ways = document.getElementById('ways');
-
-          //var count = document.createElement('div');
-          //count.setAttribute('class','col6');
         
-          nodes.innerHTML =  osmData.features.length;
-           ways.innerHTML ;
+*/      
+       tableCreate(formData.users,results);
+       $('.loading').css('display', 'none');
        
+         $('#count').css('display', 'block');
+
     });
-    console.log(formData);
+    
 });
