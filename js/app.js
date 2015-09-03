@@ -72,9 +72,12 @@ if (count)
         var tblrow = document.createElement('tr');
    
    tblrow.innerHTML = userList[i];
+   for(j=0;j<2;j++)
+   {
    var tblcol = document.createElement('td');
    tblcol.innerHTML = userCount[i].features.length;
    tblrow.appendChild(tblcol);
+   }
   tblbody.appendChild(tblrow);
   counttable.appendChild(tblbody);
   
@@ -82,7 +85,6 @@ if (count)
 
 
 }
-
 $('.button').on('click', function() {
 $('#count').css('display', 'none');
 
