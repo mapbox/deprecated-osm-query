@@ -57,16 +57,13 @@ function tableCreate(userList,userCount) {
     
 
 var count = document.getElementById('countbody');
+
 if (count)
 {
-var tableRows = count.getElementsByTagName('tr');
-var rowCount = tableRows.length;
-
-for (var x=rowCount-1; x>=0; x--) {
-
-   count.removeChild(tableRows[x]);
+    $("#countbody").remove();
+   
 }
-}
+
     var tblbody = document.createElement('tbody');
   tblbody.setAttribute('id','countbody');
 
@@ -82,7 +79,7 @@ for (var x=rowCount-1; x>=0; x--) {
   counttable.appendChild(tblbody);
   
   }
-  
+
 
 }
 
