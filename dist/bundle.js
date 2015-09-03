@@ -22,6 +22,7 @@ function queryOverpass (u, callback) {
     } else if (formData.fromDate != '' && formData.toDate === '') {
         overpassDate = "(changed:'"+formData.fromDate+"')";
     }
+
     if (formData.tags.length && formData.tags[0] != '') {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
@@ -54,6 +55,7 @@ function errorNotice (message) {
     }, 2000);
 
 }
+
 function tableCreate(userList,userCount) {
     
 
@@ -73,9 +75,12 @@ if (count)
         var tblrow = document.createElement('tr');
    
    tblrow.innerHTML = userList[i];
+   for(j=0;j<2;j++)
+   {
    var tblcol = document.createElement('td');
    tblcol.innerHTML = userCount[i].features.length;
    tblrow.appendChild(tblcol);
+   }
   tblbody.appendChild(tblrow);
   counttable.appendChild(tblbody);
   
@@ -95,10 +100,9 @@ $('#count').css('display', 'none');
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
+        'fromDate': $('#fromdate').val(),
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
-
 
 
     if (formData.users.length && formData.users[0] == '') {
@@ -107,23 +111,24 @@ $('#count').css('display', 'none');
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
-        /*
-        Array.prototype.push.apply(osmData.features, results[0].features);
+       Array.prototype.push.apply(osmData.features, results[0].features); 
        
         var json = JSON.stringify(osmData);
 
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
 
-        $('#download').css('display', 'inline-block');
-        $('#download').attr('href', url);
-
         
-*/      
+        $('#download').attr('href', url);
+         $('#download').attr('download', 'Query_result.json');
+    
+        
+ 
        tableCreate(formData.users,results);
-       $('.loading').css('display', 'none');
-       
+   
+       $('#download').css('display', 'inline-block');
          $('#count').css('display', 'block');
+             $('.loading').css('display', 'none');
 
     });
     

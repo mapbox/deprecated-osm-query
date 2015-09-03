@@ -21,6 +21,7 @@ function queryOverpass (u, callback) {
     } else if (formData.fromDate != '' && formData.toDate === '') {
         overpassDate = "(changed:'"+formData.fromDate+"')";
     }
+
     if (formData.tags.length && formData.tags[0] != '') {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
@@ -53,6 +54,7 @@ function errorNotice (message) {
     }, 2000);
 
 }
+
 function tableCreate(userList,userCount) {
     
 
@@ -96,10 +98,9 @@ $('#count').css('display', 'none');
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
+        'fromDate': $('#fromdate').val() ? new Date($('#todate').val()).toISOString() : '',
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
-
 
 
     if (formData.users.length && formData.users[0] == '') {
@@ -108,23 +109,25 @@ $('#count').css('display', 'none');
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
-        /*
-        Array.prototype.push.apply(osmData.features, results[0].features);
+       Array.prototype.push.apply(osmData.features, results[0].features); 
        
         var json = JSON.stringify(osmData);
 
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
 
-        $('#download').css('display', 'inline-block');
-        $('#download').attr('href', url);
-
         
-*/      
+        $('#download').attr('href', url);
+         $('#download').attr('download', 'Query_result.json');
+    
+        
+ 
        tableCreate(formData.users,results);
-       $('.loading').css('display', 'none');
+   
        
          $('#count').css('display', 'block');
+         $('#download').css('display', 'inline-block');
+             $('.loading').css('display', 'none');
 
     });
     
