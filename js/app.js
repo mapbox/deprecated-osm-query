@@ -56,45 +56,38 @@ function errorNotice (message) {
 }
 
 function tableCreate(userList,userCount) {
-    
-
-var count = document.getElementById('countbody');
-
-if (count)
-{
-    $("#countbody").remove();
+    var count = document.getElementById('countbody');
+    if (count){
+       $("#countbody").remove();
    
-}
+    }
 
     var tblbody = document.createElement('tbody');
-  tblbody.setAttribute('id','countbody');
+    tblbody.setAttribute('id','countbody');
 
-    for (var i = 0; i < userList.length; i++)
-    {
-        var tblrow = document.createElement('tr');
-   
-   tblrow.innerHTML = userList[i];
-   for(j=0;j<2;j++)
-   {
-   var tblcol = document.createElement('td');
-   tblcol.innerHTML = userCount[i].features.length;
-   tblrow.appendChild(tblcol);
-   }
-  tblbody.appendChild(tblrow);
-  counttable.appendChild(tblbody);
+    for (var i = 0; i < userList.length; i++){
+         var tblrow = document.createElement('tr');
+         tblrow.innerHTML = userList[i];
+         for(j=0;j<2;j++){
+            var tblcol = document.createElement('td');
+            tblcol.innerHTML = userCount[i].features.length;
+            tblrow.appendChild(tblcol);
+         }
+         tblbody.appendChild(tblrow);
+         counttable.appendChild(tblbody);
   
-  }
-
-
+    }
 }
-$('.button').on('click', function() {
-$('#count').css('display', 'none');
 
+
+$('.button').on('click', function() {
+    $('#count').css('display', 'none');
 
     osmData = {
     'type': "FeatureCollection",
     'features': []
-}
+    }
+
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
@@ -109,7 +102,7 @@ $('#count').css('display', 'none');
     };
 
     async.map(formData.users, queryOverpass, function (err, results) {
-       Array.prototype.push.apply(osmData.features, results[0].features); 
+        Array.prototype.push.apply(osmData.features, results[0].features); 
        
         var json = JSON.stringify(osmData);
 
@@ -118,16 +111,14 @@ $('#count').css('display', 'none');
 
         
         $('#download').attr('href', url);
-         $('#download').attr('download', 'Query_result.json');
+        $('#download').attr('download', 'Query_result.json');
     
-        
- 
-       tableCreate(formData.users,results);
+        tableCreate(formData.users,results);
    
        
-         $('#count').css('display', 'block');
-         $('#download').css('display', 'inline-block');
-             $('.loading').css('display', 'none');
+        $('#count').css('display', 'block');
+        $('#download').css('display', 'inline-block');
+        $('.loading').css('display', 'none');
 
     });
     
