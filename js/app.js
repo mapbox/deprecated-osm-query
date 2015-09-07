@@ -4,8 +4,6 @@ var async = require('async');
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
 var map = L.mapbox.map('map', 'mapbox.streets');
 
-var osmData = {};
-
 var formData = {};
 
 var head = '[out:json];'
@@ -36,14 +34,15 @@ function queryOverpass (u, callback) {
         });
     }
     var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    $('.loading').css('display', 'inline-block');
     var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
+
+    $('.loading').css('display', 'inline-block');
     $.ajax(url)
-        .done(function(data) {
-            console.log(data);
-            var geojson = osmtogeojson(data);
-            callback(null, geojson);
-        });
+    .done(function(data) {
+        console.log(data);
+        var geojson = osmtogeojson(data);
+        callback(null, geojson);
+    });
 }
 
 function errorNotice (message) {
@@ -55,27 +54,39 @@ function errorNotice (message) {
 
 }
 
-function tableCreate(userList,userCount) {
-    var count = document.getElementById('countbody');
-    if (count){
-       $("#countbody").remove();
-   
+function createTable(userList,userCount) {
+
+    if ($('table')) {
+        $('table').remove();
     }
 
-    var tblbody = document.createElement('tbody');
-    tblbody.setAttribute('id','countbody');
+    var tableDiv = document.getElementById('count');
+    var table = document.createElement('table');
+    tableDiv.appendChild(table);
 
-    for (var i = 0; i < userList.length; i++){
-         var tblrow = document.createElement('tr');
-         tblrow.innerHTML = userList[i];
-         for(j=0;j<2;j++){
-            var tblcol = document.createElement('td');
-            tblcol.innerHTML = userCount[i].features.length;
-            tblrow.appendChild(tblcol);
-         }
-         tblbody.appendChild(tblrow);
-         counttable.appendChild(tblbody);
-  
+    $('table').addClass('prose');
+    $('table').addClass('table');
+
+    var tableHead = document.createElement('thead');
+    table.appendChild(tableHead);
+    $('thead').append('<tr><th>User</th><th>Node</th><th>Ways</th></tr>');
+
+    var tableBody = document.createElement('tbody');
+    table.appendChild(tableBody);
+
+
+    for (var i = 0; i < userList.length; i++) {
+        var userRow = document.createElement('tr');
+        var userCell = document.createElement('td');
+        userCell.innerHTML = userList[i];
+        userRow.appendChild(userCell);
+
+        for (j = 0; j < 2; j++) {
+            var userColumn = document.createElement('td');
+            userColumn.innerHTML = userCount[i].features.length;
+            userRow.appendChild(userColumn);
+        }
+        tableBody.appendChild(userRow);
     }
 }
 
@@ -83,9 +94,9 @@ function tableCreate(userList,userCount) {
 $('.button').on('click', function() {
     $('#count').css('display', 'none');
 
-    osmData = {
-    'type': "FeatureCollection",
-    'features': []
+    var osmData = {
+        'type': "FeatureCollection",
+        'features': []
     }
 
     formData = {
@@ -103,23 +114,23 @@ $('.button').on('click', function() {
 
     async.map(formData.users, queryOverpass, function (err, results) {
         Array.prototype.push.apply(osmData.features, results[0].features); 
-       
+
         var json = JSON.stringify(osmData);
 
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
 
-        
+
         $('#download').attr('href', url);
-        $('#download').attr('download', 'Query_result.json');
-    
-        tableCreate(formData.users,results);
-   
-       
+        $('#download').attr('download', 'data.json');
+
+        createTable(formData.users,results);
+
+
         $('#count').css('display', 'block');
         $('#download').css('display', 'inline-block');
         $('.loading').css('display', 'none');
 
     });
-    
+
 });
