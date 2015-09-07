@@ -5,20 +5,15 @@
     float: left;
 }
 
-
-
 #count {
     display: block;
     clear: left;
-   float: left;
-   overflow: auto;
-   margin-top: 50px;
+    float: left;
+    overflow: auto;
+    margin-top: 50px;
     margin-left: 20px;
     margin-right: 20px;
-
 }
-
-
 
 #map {
     position: absolute;
@@ -26,7 +21,6 @@
     bottom: 0px;
     right: 0px;
     left: 30%;
-
 }
 
 .left {
