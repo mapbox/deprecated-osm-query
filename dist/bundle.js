@@ -3,12 +3,45 @@ var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
-var map = L.mapbox.map('map', 'mapbox.streets');
+var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
 
 var formData = {};
+var nodeCount =[];
+
+
+var dateTime    = new Date(); 
+var year    = dateTime.getFullYear();
+var month   = dateTime.getMonth() + 1; 
+var day     = dateTime.getDate();
+var hour    = dateTime.getHours();
+var minute  = dateTime.getMinutes();
+var second  = dateTime.getSeconds(); 
+  if(month.toString().length == 1) {
+        var month = '0'+month;
+    }
+    if(day.toString().length == 1) {
+        var day = '0'+day;
+    }   
+    if(hour.toString().length == 1) {
+        var hour = '0'+hour;
+    }
+    if(minute.toString().length == 1) {
+        var minute = '0'+minute;
+    }
+    if(second.toString().length == 1) {
+        var second = '0'+second;
+    }   
+var currentDate = year+'-'+month+'-'+day
+var currentTime = 'T'+hour+':'+minute+':'+second;  
+
+
+ $("#fromdate").val(currentDate+'T00:00:01'); 
+ $("#todate").val(currentDate+currentTime);     
+
 
 var head = '[out:json];'
 var q = head+"node(user:'%s')%s%s(%s);out;";
+
 
 function queryOverpass (u, callback) {
     var bbox = map.getBounds().toBBoxString().split(',');
@@ -35,6 +68,7 @@ function queryOverpass (u, callback) {
         });
     }
     var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
+    console.log(query);
     var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
 
     $('.loading').css('display', 'inline-block');
@@ -45,6 +79,8 @@ function queryOverpass (u, callback) {
         callback(null, geojson);
     });
 }
+
+
 
 function errorNotice (message) {
     $('.note').css('display', 'block');
@@ -70,21 +106,21 @@ function createTable(userList,userCount) {
 
     var tableHead = document.createElement('thead');
     table.appendChild(tableHead);
-    $('thead').append('<tr><th>User</th><th>Node</th><th>Ways</th></tr>');
+    $('thead').append('<tr><th>User</th><th>Node</th></tr>');
 
     var tableBody = document.createElement('tbody');
     table.appendChild(tableBody);
-    
+
 
     for (var i = 0; i < userList.length; i++) {
         var userRow = document.createElement('tr');
         var userCell = document.createElement('td');
         userCell.innerHTML = userList[i];
         userRow.appendChild(userCell);
-        
-        for (j = 0; j < 2; j++) {
+
+        for (j = 0; j < 1; j++) {
             var userColumn = document.createElement('td');
-            userColumn.innerHTML = userCount[i].features.length;
+            userColumn.innerHTML = userCount[i];
             userRow.appendChild(userColumn);
         }
         tableBody.appendChild(userRow);
@@ -100,12 +136,16 @@ $('.button').on('click', function() {
         'features': []
     }
 
+   
+
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': $('#fromdate').val() ? new Date($('#todate').val()).toISOString() : '',
+        'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
+
+     console.log(formData.fromDate + ' ' + formData.toDate)
 
 
     if (formData.users.length && formData.users[0] == '') {
@@ -120,19 +160,24 @@ $('.button').on('click', function() {
 
         var blob = new Blob([json], {type: "application/json"});
         var url = URL.createObjectURL(blob);
+        for(i=0;i<formData.users.length;i++){
+            nodeCount[i] = results[i].features.length;
+            
+        }
 
 
         $('#download').attr('href', url);
         $('#download').attr('download', 'data.json');
 
-        createTable(formData.users,results);
-
-
+        createTable(formData.users,nodeCount);
+        
+        
         $('#count').css('display', 'block');
         $('#download').css('display', 'inline-block');
         $('.loading').css('display', 'none');
 
     });
+
 
 });
 
@@ -4334,32 +4379,64 @@ if (typeof Object.create === 'function') {
 var process = module.exports = {};
 var queue = [];
 var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
 
 function drainQueue() {
     if (draining) {
         return;
     }
+    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
-    var currentQueue;
+
     var len = queue.length;
     while(len) {
         currentQueue = queue;
         queue = [];
-        var i = -1;
-        while (++i < len) {
-            currentQueue[i]();
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
         }
+        queueIndex = -1;
         len = queue.length;
     }
+    currentQueue = null;
     draining = false;
+    clearTimeout(timeout);
 }
+
 process.nextTick = function (fun) {
-    queue.push(fun);
-    if (!draining) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
         setTimeout(drainQueue, 0);
     }
 };
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
 process.title = 'browser';
 process.browser = true;
 process.env = {};
