@@ -67,7 +67,7 @@ function queryOverpass (u, callback) {
         });
     }
     var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    console.log(query);
+    console.log(query); 
     var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
 
     $('.loading').css('display', 'inline-block');
