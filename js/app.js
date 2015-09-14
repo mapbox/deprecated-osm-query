@@ -1,42 +1,16 @@
 var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
+var moment = require('moment');
+
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
 var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
 
 var formData = {};
 var nodeCount =[];
 
-
-var dateTime    = new Date(); 
-var year    = dateTime.getFullYear();
-var month   = dateTime.getMonth() + 1; 
-var day     = dateTime.getDate();
-var hour    = dateTime.getHours();
-var minute  = dateTime.getMinutes();
-var second  = dateTime.getSeconds(); 
-  if(month.toString().length == 1) {
-        var month = '0'+month;
-    }
-    if(day.toString().length == 1) {
-        var day = '0'+day;
-    }   
-    if(hour.toString().length == 1) {
-        var hour = '0'+hour;
-    }
-    if(minute.toString().length == 1) {
-        var minute = '0'+minute;
-    }
-    if(second.toString().length == 1) {
-        var second = '0'+second;
-    }   
-var currentDate = year+'-'+month+'-'+day
-var currentTime = 'T'+hour+':'+minute+':'+second;  
-
-
- $("#fromdate").val(currentDate+'T00:00:01'); 
- $("#todate").val(currentDate+currentTime);     
-
+$("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));   
+$("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss')); 
 
 var head = '[out:json];'
 var q = head+"node(user:'%s')%s%s(%s);out;";
@@ -143,8 +117,6 @@ $('.button').on('click', function() {
         'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
-
-     console.log(formData.fromDate + ' ' + formData.toDate)
 
 
     if (formData.users.length && formData.users[0] == '') {
