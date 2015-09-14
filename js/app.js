@@ -22,9 +22,9 @@ function queryOverpass (u, callback) {
     var overpassDate = '';
     var overpassFilter = '';
     if (formData.fromDate != '' && formData.toDate != '') {
-        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
+        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"','"+moment().utc(formData.toDate).toISOString()+"')"
     } else if (formData.fromDate != '' && formData.toDate === '') {
-        overpassDate = "(changed:'"+formData.fromDate+"')";
+        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"')";
     }
 
     if (formData.tags.length && formData.tags[0] != '') {

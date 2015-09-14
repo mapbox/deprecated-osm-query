@@ -23,9 +23,9 @@ function queryOverpass (u, callback) {
     var overpassDate = '';
     var overpassFilter = '';
     if (formData.fromDate != '' && formData.toDate != '') {
-        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
+        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"','"+moment().utc(formData.toDate).toISOString()+"')"
     } else if (formData.fromDate != '' && formData.toDate === '') {
-        overpassDate = "(changed:'"+formData.fromDate+"')";
+        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"')";
     }
 
     if (formData.tags.length && formData.tags[0] != '') {
@@ -119,8 +119,6 @@ $('.button').on('click', function() {
         'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
     };
 
-
-console.log(moment.utc(formData.fromDate))
 
     if (formData.users.length && formData.users[0] == '') {
         errorNotice('Specify at least one username');
