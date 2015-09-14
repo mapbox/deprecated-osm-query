@@ -22,9 +22,9 @@ function queryOverpass (u, callback) {
     var overpassDate = '';
     var overpassFilter = '';
     if (formData.fromDate != '' && formData.toDate != '') {
-        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"','"+moment().utc(formData.toDate).toISOString()+"')"
+        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
     } else if (formData.fromDate != '' && formData.toDate === '') {
-        overpassDate = "(changed:'"+moment().utc(formData.fromDate).toISOString()+"')";
+        overpassDate = "(changed:'"+formData.fromDate+"')";
     }
 
     if (formData.tags.length && formData.tags[0] != '') {
@@ -110,12 +110,11 @@ $('.button').on('click', function() {
     }
 
    
-
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': $('#fromdate').val() ? new Date($('#fromdate').val()).toISOString() : '',
-        'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
+        'fromDate': moment($('#fromdate').val()).utc().toISOString(),
+        'toDate': moment($('#todate').val()).utc().toISOString()
     };
 
 
