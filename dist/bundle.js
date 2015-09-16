@@ -28,8 +28,6 @@ function queryOverpass (u, callback) {
         overpassDate = "(changed:'"+formData.fromDate+"')";
     }
 
-    console.log('formData', formData);
-
     if (formData.tags.length && formData.tags[0] != '') {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
@@ -111,7 +109,9 @@ $('.button').on('click', function() {
         'type': "FeatureCollection",
         'features': []
     }
+   
 
+    
    
     formData = {
         'users': $('#usernames').val().split(','),
@@ -125,6 +125,17 @@ $('.button').on('click', function() {
         errorNotice('Specify at least one username');
         return;
     };
+    
+    if (formData.fromDate='Invalid date') {
+        fromdate_default = moment().format('YYYY-MM-DD[T]00:00:01'); 
+        formData.fromDate = moment(fromdate_default).utc().toISOString();
+    };
+    if (formData.toDate='Invalid date') {
+        todate_default = moment().format('YYYY-MM-DD[T]HH:mm:ss'); 
+        formData.toDate = moment(todate_default).utc().toISOString();
+    };
+
+    console.log(formData.fromDate)
 
     async.map(formData.users, queryOverpass, function (err, results) {
         Array.prototype.push.apply(osmData.features, results[0].features); 
@@ -7548,32 +7559,64 @@ if (typeof Object.create === 'function') {
 var process = module.exports = {};
 var queue = [];
 var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
 
 function drainQueue() {
     if (draining) {
         return;
     }
+    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
-    var currentQueue;
+
     var len = queue.length;
     while(len) {
         currentQueue = queue;
         queue = [];
-        var i = -1;
-        while (++i < len) {
-            currentQueue[i]();
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
         }
+        queueIndex = -1;
         len = queue.length;
     }
+    currentQueue = null;
     draining = false;
+    clearTimeout(timeout);
 }
+
 process.nextTick = function (fun) {
-    queue.push(fun);
-    if (!draining) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
         setTimeout(drainQueue, 0);
     }
 };
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
 process.title = 'browser';
 process.browser = true;
 process.env = {};

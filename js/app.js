@@ -108,7 +108,9 @@ $('.button').on('click', function() {
         'type': "FeatureCollection",
         'features': []
     }
+   
 
+    
    
     formData = {
         'users': $('#usernames').val().split(','),
@@ -122,6 +124,17 @@ $('.button').on('click', function() {
         errorNotice('Specify at least one username');
         return;
     };
+    
+    if (formData.fromDate='Invalid date') {
+        fromdate_default = moment().format('YYYY-MM-DD[T]00:00:01'); 
+        formData.fromDate = moment(fromdate_default).utc().toISOString();
+    };
+    if (formData.toDate='Invalid date') {
+        todate_default = moment().format('YYYY-MM-DD[T]HH:mm:ss'); 
+        formData.toDate = moment(todate_default).utc().toISOString();
+    };
+
+    console.log(formData.fromDate)
 
     async.map(formData.users, queryOverpass, function (err, results) {
         Array.prototype.push.apply(osmData.features, results[0].features); 
