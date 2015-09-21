@@ -8,13 +8,14 @@ var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderCont
 
 var formData = {};
 var nodeCount =[];
+var wayCount =[];
 
 $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));   
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss')); 
 
 var head = '[out:json];'
 var q = head+"node(user:'%s')%s%s(%s);out;";
-
+var q_way = head+"way(user:'%s')%s%s(%s);out;";
 
 function queryOverpass (u, callback) {
     var bbox = map.getBounds().toBBoxString().split(',');
@@ -53,7 +54,42 @@ function queryOverpass (u, callback) {
     });
 }
 
+function queryOverpass_way (u, callback) {
+    var bbox = map.getBounds().toBBoxString().split(',');
+    var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
+    var overpassDate = '';
+    var overpassFilter = '';
+    if (formData.fromDate != '' && formData.toDate != '') {
+        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
+    } else if (formData.fromDate != '' && formData.toDate === '') {
+        overpassDate = "(changed:'"+formData.fromDate+"')";
+    }
 
+    if (formData.tags.length && formData.tags[0] != '') {
+        formData.tags.forEach(function (tag) {
+            var key = tag.split('=')[0];
+            var value = tag.split('=')[1];
+            console.log(value);
+            if (value === undefined) {
+                console.log('here')
+                overpassFilter = overpassFilter+"['"+key+"']";
+            } else {
+                overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
+            }
+        });
+    }
+    var query = util.format(q_way, u, overpassDate, overpassFilter, overpassBbox);
+    console.log(query); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
+
+    $('.loading').css('display', 'inline-block');
+    $.ajax(url)
+    .done(function(data) {
+        console.log(data);
+        var geojson = osmtogeojson(data);
+        callback(null, geojson);
+    });
+}
 
 function errorNotice (message) {
     $('.note').css('display', 'block');
@@ -64,7 +100,7 @@ function errorNotice (message) {
 
 }
 
-function createTable(userList,userCount) {
+function createTable(userList,userNode,userWay) {
 
     if ($('table')) {
         $('table').remove();
@@ -79,7 +115,8 @@ function createTable(userList,userCount) {
 
     var tableHead = document.createElement('thead');
     table.appendChild(tableHead);
-    $('thead').append('<tr><th>User</th><th>Node</th></tr>');
+    $('thead').append('<tr><th>User</th><th>Node</th><th>Way</th></tr>');
+
 
     var tableBody = document.createElement('tbody');
     table.appendChild(tableBody);
@@ -93,7 +130,12 @@ function createTable(userList,userCount) {
 
         for (j = 0; j < 1; j++) {
             var userColumn = document.createElement('td');
-            userColumn.innerHTML = userCount[i];
+            userColumn.innerHTML = userNode[i];
+            userRow.appendChild(userColumn);
+        }
+        for (k = 0; k < 1; k++) {
+            var userColumn = document.createElement('td');
+            userColumn.innerHTML = userWay[i];
             userRow.appendChild(userColumn);
         }
         tableBody.appendChild(userRow);
@@ -108,9 +150,7 @@ $('.button').on('click', function() {
         'type': "FeatureCollection",
         'features': []
     }
-   
 
-    
    
     formData = {
         'users': $('#usernames').val().split(','),
@@ -125,41 +165,49 @@ $('.button').on('click', function() {
         return;
     };
     
-    if (formData.fromDate='Invalid date') {
+    
+    if (formData.fromDate === 'Invalid date') {
         fromdate_default = moment().format('YYYY-MM-DD[T]00:00:01'); 
         formData.fromDate = moment(fromdate_default).utc().toISOString();
     };
-    if (formData.toDate='Invalid date') {
+    if (formData.toDate === 'Invalid date') {
         todate_default = moment().format('YYYY-MM-DD[T]HH:mm:ss'); 
         formData.toDate = moment(todate_default).utc().toISOString();
     };
 
-    console.log(formData.fromDate)
+    
 
-    async.map(formData.users, queryOverpass, function (err, results) {
-        Array.prototype.push.apply(osmData.features, results[0].features); 
-
-        var json = JSON.stringify(osmData);
-
-        var blob = new Blob([json], {type: "application/json"});
-        var url = URL.createObjectURL(blob);
+    async.map(formData.users, queryOverpass, function (err, resultsNode) {
+        Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
         for(i=0;i<formData.users.length;i++){
-            nodeCount[i] = results[i].features.length;
+            nodeCount[i] = resultsNode[i].features.length;
+           
             
         }
-
-
-        $('#download').attr('href', url);
-        $('#download').attr('download', 'data.json');
-
-        createTable(formData.users,nodeCount);
         
-        
-        $('#count').css('display', 'block');
-        $('#download').css('display', 'inline-block');
-        $('.loading').css('display', 'none');
 
     });
+    async.map(formData.users, queryOverpass_way, function (err, resultsWay) {
+        console.log(resultsWay);
+        Array.prototype.push.apply(osmData.features, results_way[0].features); 
+        for(i=0;i<formData.users.length;i++){
+            wayCount[i] = resultsWay[i].features.length;
+            
+        }
+    });
+
+    var json = JSON.stringify(osmData);
+    var blob = new Blob([json], {type: "application/json"});
+    var url = URL.createObjectURL(blob);
+    $('#download').attr('href', url);
+    $('#download').attr('download', 'data.json'); 
+
+    createTable(formData.users,nodeCount,wayCount);
+        
+        
+    $('#count').css('display', 'block');
+    $('#download').css('display', 'inline-block');
+    $('.loading').css('display', 'none');
 
 
 });
