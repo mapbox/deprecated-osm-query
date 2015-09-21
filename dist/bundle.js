@@ -140,7 +140,7 @@ function createTable(userList,userNode,userWay) {
 }
 
 
-$('.button').on('click', function() {
+$('#submit').on('click', function() {
     $('#count').css('display', 'none');
 
     var osmData = {
@@ -193,7 +193,7 @@ $('.button').on('click', function() {
           // 3.3 Render the table in the callback.
           console.log('# Okay ways');
           console.log(resultsWay);
-          for (i = 0;i < formData.users.length; i++) {
+          for (var i = 0;i < formData.users.length; i++) {
                 wayCount[i] = resultsWay[i].features.length;
             }
             var json = JSON.stringify(osmData);
