@@ -128,7 +128,7 @@ function createTable(userList,userNode,userWay) {
             userColumn.innerHTML = userNode[i];
             userRow.appendChild(userColumn);
         }
-        for (k = 0; k < 1; j++) {
+        for (k = 0; k < 1; k++) {
             var userColumn = document.createElement('td');
             userColumn.innerHTML = userWay[i];
             userRow.appendChild(userColumn);
