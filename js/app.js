@@ -32,9 +32,7 @@ function queryOverpass (u, callback) {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
             var value = tag.split('=')[1];
-            console.log(value);
             if (value === undefined) {
-                console.log('here')
                 overpassFilter = overpassFilter+"['"+key+"']";
             } else {
                 overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
@@ -42,13 +40,12 @@ function queryOverpass (u, callback) {
         });
     }
     var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    console.log(query); 
-    var url = 'http://overpass-api.de/api/interpreter?data='+query;
+    console.log('#node query', query); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
 
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
@@ -69,9 +66,7 @@ function queryOverpassWay (u, callback) {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
             var value = tag.split('=')[1];
-            console.log(value);
             if (value === undefined) {
-                console.log('here')
                 overpassFilter = overpassFilter+"['"+key+"']";
             } else {
                 overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
@@ -79,18 +74,16 @@ function queryOverpassWay (u, callback) {
         });
     }
     var query = util.format(qWay, u, overpassDate, overpassFilter, overpassBbox);
-    console.log(query); 
-    var url = 'http://overpass-api.de/api/interpreter?data='+query;
+    console.log('#way query', query); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
     
 
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
-   console.log('outside callback');
 }
 
 function errorNotice (message) {
@@ -180,43 +173,38 @@ $('.button').on('click', function() {
 
     
 
-    async.mapSeries(formData.users, queryOverpass, function (err, resultsNode) {
+    async.map(formData.users, queryOverpass, function (err, resultsNode) {
         // 1. Get the node count
         // 2. Merge nodes to osmData
         // 3. Do async.map for ways.
           // 3.1 Get ways count
           // 3.2 Merge ways to osmData
           // 3.3 Render the table in the callback.
-
+        console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
-        for(i=0;i<formData.users.length;i++){
+        for(i = 0; i < formData.users.length; i++){
             nodeCount[i] = resultsNode[i].features.length;
         }
-        async.mapSeries(formData.users, queryOverpassWay, function(err, resultsWay) {
+
+        async.map(formData.users, queryOverpassWay, function (err, resultsWay) {
             // 3.1 Get ways count
           // 3.2 Merge ways to osmData
           // 3.3 Render the table in the callback.
-          for(i=0;i<formData.users.length;i++){
-            wayCount[i] = resultsWay[i].features.length;
-        }
-
-        })
-        var json = JSON.stringify(osmData);
-        var blob = new Blob([json], {type: "application/json"});
-        var url = URL.createObjectURL(blob);
-        $('#download').attr('href', url);
-        $('#download').attr('download', 'data.json'); 
-
-        createTable(formData.users,nodeCount,wayCount);
-        
-        
-        $('#count').css('display', 'block');
-        $('#download').css('display', 'inline-block');
-        $('.loading').css('display', 'none');
+          console.log('# Okay ways');
+          console.log(resultsWay);
+          for (i = 0;i < formData.users.length; i++) {
+                wayCount[i] = resultsWay[i].features.length;
+            }
+            var json = JSON.stringify(osmData);
+            var blob = new Blob([json], {type: "application/json"});
+            var url = URL.createObjectURL(blob);
+            $('#download').attr('href', url);
+            $('#download').attr('download', 'data.json'); 
+            $('#count').css('display', 'block');
+            $('#download').css('display', 'inline-block');
+            $('.loading').css('display', 'none');
+            createTable(formData.users,nodeCount,wayCount);
+        });
 
     });
-    
-   
-
-
 });

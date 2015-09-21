@@ -33,9 +33,7 @@ function queryOverpass (u, callback) {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
             var value = tag.split('=')[1];
-            console.log(value);
             if (value === undefined) {
-                console.log('here')
                 overpassFilter = overpassFilter+"['"+key+"']";
             } else {
                 overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
@@ -43,13 +41,12 @@ function queryOverpass (u, callback) {
         });
     }
     var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    console.log(query); 
-    var url = 'http://overpass-api.de/api/interpreter?data='+query;
+    console.log('#node query', query); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
 
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
@@ -70,9 +67,7 @@ function queryOverpassWay (u, callback) {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
             var value = tag.split('=')[1];
-            console.log(value);
             if (value === undefined) {
-                console.log('here')
                 overpassFilter = overpassFilter+"['"+key+"']";
             } else {
                 overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
@@ -80,18 +75,16 @@ function queryOverpassWay (u, callback) {
         });
     }
     var query = util.format(qWay, u, overpassDate, overpassFilter, overpassBbox);
-    console.log(query); 
-    var url = 'http://overpass-api.de/api/interpreter?data='+query;
+    console.log('#way query', query); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
     
 
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
-   console.log('outside callback');
 }
 
 function errorNotice (message) {
@@ -181,45 +174,40 @@ $('.button').on('click', function() {
 
     
 
-    async.mapSeries(formData.users, queryOverpass, function (err, resultsNode) {
+    async.map(formData.users, queryOverpass, function (err, resultsNode) {
         // 1. Get the node count
         // 2. Merge nodes to osmData
         // 3. Do async.map for ways.
           // 3.1 Get ways count
           // 3.2 Merge ways to osmData
           // 3.3 Render the table in the callback.
-
+        console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
-        for(i=0;i<formData.users.length;i++){
+        for(i = 0; i < formData.users.length; i++){
             nodeCount[i] = resultsNode[i].features.length;
         }
-        async.mapSeries(formData.users, queryOverpassWay, function(err, resultsWay) {
+
+        async.map(formData.users, queryOverpassWay, function (err, resultsWay) {
             // 3.1 Get ways count
           // 3.2 Merge ways to osmData
           // 3.3 Render the table in the callback.
-          for(i=0;i<formData.users.length;i++){
-            wayCount[i] = resultsWay[i].features.length;
-        }
-
-        })
-        var json = JSON.stringify(osmData);
-        var blob = new Blob([json], {type: "application/json"});
-        var url = URL.createObjectURL(blob);
-        $('#download').attr('href', url);
-        $('#download').attr('download', 'data.json'); 
-
-        createTable(formData.users,nodeCount,wayCount);
-        
-        
-        $('#count').css('display', 'block');
-        $('#download').css('display', 'inline-block');
-        $('.loading').css('display', 'none');
+          console.log('# Okay ways');
+          console.log(resultsWay);
+          for (i = 0;i < formData.users.length; i++) {
+                wayCount[i] = resultsWay[i].features.length;
+            }
+            var json = JSON.stringify(osmData);
+            var blob = new Blob([json], {type: "application/json"});
+            var url = URL.createObjectURL(blob);
+            $('#download').attr('href', url);
+            $('#download').attr('download', 'data.json'); 
+            $('#count').css('display', 'block');
+            $('#download').css('display', 'inline-block');
+            $('.loading').css('display', 'none');
+            createTable(formData.users,nodeCount,wayCount);
+        });
 
     });
-    
-   
-
-
 });
 },{"async":2,"moment":3,"osmtogeojson":4,"util":13}],2:[function(require,module,exports){
 (function (process,global){
@@ -7615,64 +7603,32 @@ if (typeof Object.create === 'function') {
 var process = module.exports = {};
 var queue = [];
 var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
 
 function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
-
+    var currentQueue;
     var len = queue.length;
     while(len) {
         currentQueue = queue;
         queue = [];
-        while (++queueIndex < len) {
-            currentQueue[queueIndex].run();
+        var i = -1;
+        while (++i < len) {
+            currentQueue[i]();
         }
-        queueIndex = -1;
         len = queue.length;
     }
-    currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
 }
-
 process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
+    queue.push(fun);
+    if (!draining) {
         setTimeout(drainQueue, 0);
     }
 };
 
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
 process.title = 'browser';
 process.browser = true;
 process.env = {};
