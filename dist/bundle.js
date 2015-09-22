@@ -47,6 +47,7 @@ function queryOverpass (u, callback) {
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
+        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
@@ -82,8 +83,10 @@ function queryOverpassWay (u, callback) {
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        var geojson = osmtogeojson(data);
-        callback(null, geojson);
+        console.log(data);
+        //var geojson = osmtogeojson(data);
+        callback(null,data.elements.length);
+
     });
 }
 
@@ -123,7 +126,6 @@ function createTable(userList,userNode,userWay) {
         var userCell = document.createElement('td');
         userCell.innerHTML = userList[i];
         userRow.appendChild(userCell);
-
         for (j = 0; j < 1; j++) {
             var userColumn = document.createElement('td');
             userColumn.innerHTML = userNode[i];
@@ -131,13 +133,14 @@ function createTable(userList,userNode,userWay) {
         }
         for (k = 0; k < 1; k++) {
             var userColumn = document.createElement('td');
-            userColumn.innerHTML = userWay[i];
+            userColumn.innerHTML = userWay[i];      
             userRow.appendChild(userColumn);
         }
         
         tableBody.appendChild(userRow);
     }
 }
+
 
 
 $('#submit').on('click', function() {
@@ -194,17 +197,18 @@ $('#submit').on('click', function() {
           console.log('# Okay ways');
           console.log(resultsWay);
           for (var i = 0;i < formData.users.length; i++) {
-                wayCount[i] = resultsWay[i].features.length;
+               wayCount[i] = resultsWay[i];
             }
             var json = JSON.stringify(osmData);
             var blob = new Blob([json], {type: "application/json"});
             var url = URL.createObjectURL(blob);
             $('#download').attr('href', url);
             $('#download').attr('download', 'data.json'); 
+            createTable(formData.users,nodeCount,wayCount);
             $('#count').css('display', 'block');
             $('#download').css('display', 'inline-block');
             $('.loading').css('display', 'none');
-            // createTable(formData.users,nodeCount,wayCount);
+            
         });
 
     });
