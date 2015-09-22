@@ -1,4 +1,6 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+//To extract node and way count for users over a given time period and area bounds.
+
 var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
@@ -8,54 +10,46 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg
 var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
 
 var formData = {};
-var nodeCount =[];
+var nodeCount =[]; 
 var wayCount =[];
 var nodeTotal =0;
 var wayTotal =0;
 
-$("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));   
-$("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss')); 
+$("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01')); 
+$("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
 var head = '[out:json];'
-var q = head+"node(user:'%s')%s%s(%s);out;";
-var qWay = head+"way(user:'%s')%s%s(%s);out;";
+var q = head+"%s(user:'%s')%s%s(%s);out;";
 
-function queryOverpass (u, callback) {
-    var bbox = map.getBounds().toBBoxString().split(',');
-    var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
-    var overpassDate = '';
-    var overpassFilter = '';
-    if (formData.fromDate != '' && formData.toDate != '') {
-        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
-    } else if (formData.fromDate != '' && formData.toDate === '') {
-        overpassDate = "(changed:'"+formData.fromDate+"')";
-    }
-
-    if (formData.tags.length && formData.tags[0] != '') {
-        formData.tags.forEach(function (tag) {
-            var key = tag.split('=')[0];
-            var value = tag.split('=')[1];
-            if (value === undefined) {
-                overpassFilter = overpassFilter+"['"+key+"']";
-            } else {
-                overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
-            }
-        });
-    }
-    var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    console.log('#node query', query); 
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
-
+//runs queries for nodes
+function getNodes (user, callback) {
+    var url = getQuery('node',user);
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
-    .done(function(data) {
-        console.log(data);
-        var geojson = osmtogeojson(data);
+    .done(function(data) { 
+        var geojson = osmtogeojson(data); 
         callback(null, geojson);
+    })
+    .fail(function() { 
+        callback('error', null);
     });
 }
 
-function queryOverpassWay (u, callback) {
+//runs queries for ways
+function getWays (user, callback) {
+    var url = getQuery('way',user);
+    $('.loading').css('display', 'inline-block');
+    $.ajax(url)
+    .done(function(data) { 
+        callback(null, data); 
+    })
+    .fail(function() { 
+        callback('error', null);
+    });
+}
+
+//constructs overpass query based on user inputs
+function getQuery (type,u) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
     var overpassDate = '';
@@ -77,34 +71,38 @@ function queryOverpassWay (u, callback) {
             }
         });
     }
-    var query = util.format(qWay, u, overpassDate, overpassFilter, overpassBbox);
-    console.log('#way query', query); 
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
-    
 
-    $('.loading').css('display', 'inline-block');
-    $.ajax(url)
-    .done(function(data) {
-        console.log(data);
-        //var geojson = osmtogeojson(data);
-        callback(null,data.elements.length);
-
-    });
+    // 
+    var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query; 
+    return url;
 }
 
-function errorNotice (message) {
+//displays error messages to the user
+function errorNotice (message, time) {
     $('.note').css('display', 'block');
     $('.note p').text(message);
-    window.setTimeout(function() {
+    if(time)
+    {
+        window.setTimeout(function() {
         $('.note').css('display', 'none');
-    }, 2000);
+    }, time);
+    }
+    else
+    {
+
+        window.setTimeout(function() {
+            $('.note').css('display', 'none');
+        }, 2000);
+    }
 
 }
 
+//generates a table to display node and way counts
 function createTable(userList,userNode,userWay) {
 
     if ($('table')) {
-        $('table').remove();
+        $('table').remove(); 
     }
 
     var tableDiv = document.getElementById('count');
@@ -134,18 +132,18 @@ function createTable(userList,userNode,userWay) {
         var wayCell = document.createElement('td');
         wayCell.innerHTML = userWay[i];      
         userRow.appendChild(wayCell);
-        var userTotal = userNode[i] + userWay[i];
+        var userTotal = userNode[i] + userWay[i]; 
         var userTotalCell = document.createElement('td');
         userTotalCell.innerHTML = userTotal;
         userRow.appendChild(userTotalCell);
         tableBody.appendChild(userRow);
 
-        nodeTotal = nodeTotal + userNode[i];
+        nodeTotal = nodeTotal + userNode[i]; 
         wayTotal = wayTotal + userWay[i];
         
     }
 
-    var teamTotal = nodeTotal+wayTotal;
+    var teamTotal = nodeTotal+wayTotal; 
 
     var totalRow = document.createElement('tr'); 
     totalRow.setAttribute('class','fill-gray');
@@ -199,27 +197,34 @@ $('#submit').on('click', function() {
     };
 
     
+    // getNodes function iterated over user list using async utility. Return values from each call to the function is stored in resultsNode.
+    async.map(formData.users, getNodes, function (err, resultsNode) {
+        if (err) {
+                errorNotice('Oops! Something went wrong...',10000);
+               
+            } 
+        else {
 
-    async.map(formData.users, queryOverpass, function (err, resultsNode) {
-        // 1. Get the node count
-        // 2. Merge nodes to osmData
-        // 3. Do async.map for ways.
-          // 3.1 Get ways count
-          // 3.2 Merge ways to osmData
-          // 3.3 Render the table in the callback.
         console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
+      
         for(i = 0; i < formData.users.length; i++){
             nodeCount[i] = resultsNode[i].features.length;
         }
 
-        async.map(formData.users, queryOverpassWay, function (err, resultsWay) {
-            // 3.1 Get ways count
-          // 3.2 Merge ways to osmData
-          // 3.3 Render the table in the callback.
-          console.log('# Okay ways');
-          for (var i = 0;i < formData.users.length; i++) {
-               wayCount[i] = resultsWay[i];
+         // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
+        async.map(formData.users, getWays, function (err, resultsWay) {
+            if (err) {
+                 errorNotice('Oops! Something went wrong...',10000);
+                 
+            } 
+            else {
+
+           
+           console.log('# Okay ways');
+          
+           for (var i = 0;i < formData.users.length; i++) {
+               wayCount[i] = resultsWay[i].elements.length; 
             }
             var json = JSON.stringify(osmData);
             var blob = new Blob([json], {type: "application/json"});
@@ -228,10 +233,14 @@ $('#submit').on('click', function() {
             $('#download').attr('download', 'data.json'); 
             createTable(formData.users,nodeCount,wayCount);
             $('#count').css('display', 'block');
-            //$('#download').css('display', 'inline-block');
+            //$('#download').css('display', 'inline-block'); 
             $('.loading').css('display', 'none');
+
+            }
             
         });
+
+        }
 
     });
 });
@@ -7629,32 +7638,64 @@ if (typeof Object.create === 'function') {
 var process = module.exports = {};
 var queue = [];
 var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
 
 function drainQueue() {
     if (draining) {
         return;
     }
+    var timeout = setTimeout(cleanUpNextTick);
     draining = true;
-    var currentQueue;
+
     var len = queue.length;
     while(len) {
         currentQueue = queue;
         queue = [];
-        var i = -1;
-        while (++i < len) {
-            currentQueue[i]();
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
         }
+        queueIndex = -1;
         len = queue.length;
     }
+    currentQueue = null;
     draining = false;
+    clearTimeout(timeout);
 }
+
 process.nextTick = function (fun) {
-    queue.push(fun);
-    if (!draining) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
         setTimeout(drainQueue, 0);
     }
 };
 
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
 process.title = 'browser';
 process.browser = true;
 process.env = {};
