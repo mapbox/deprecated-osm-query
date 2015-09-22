@@ -200,10 +200,10 @@ $('#submit').on('click', function() {
     async.map(formData.users, getNodes, function (err, resultsNode) {
         if (err) {
                 errorNotice('Oops! Something went wrong...',10000);
+                $('.loading').css('display', 'none');
                
             } 
-        else {
-
+        
         console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
       
@@ -215,10 +215,9 @@ $('#submit').on('click', function() {
         async.map(formData.users, getWays, function (err, resultsWay) {
             if (err) {
                  errorNotice('Oops! Something went wrong...',10000);
+                 $('.loading').css('display', 'none');
                  
             } 
-            else {
-
            
            console.log('# Okay ways');
           
@@ -235,11 +234,11 @@ $('#submit').on('click', function() {
             //$('#download').css('display', 'inline-block'); 
             $('.loading').css('display', 'none');
 
-            }
+           
             
         });
 
-        }
+       
 
     });
 });
