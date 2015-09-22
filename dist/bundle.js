@@ -10,6 +10,8 @@ var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderCont
 var formData = {};
 var nodeCount =[];
 var wayCount =[];
+var nodeTotal =0;
+var wayTotal =0;
 
 $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));   
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss')); 
@@ -114,7 +116,7 @@ function createTable(userList,userNode,userWay) {
 
     var tableHead = document.createElement('thead');
     table.appendChild(tableHead);
-    $('thead').append('<tr><th>User</th><th>Node</th><th>Way</th></tr>');
+    $('thead').append('<tr><th>User</th><th>Node</th><th>Way</th><th>Total</th></tr>');
 
 
     var tableBody = document.createElement('tbody');
@@ -126,19 +128,40 @@ function createTable(userList,userNode,userWay) {
         var userCell = document.createElement('td');
         userCell.innerHTML = userList[i];
         userRow.appendChild(userCell);
-        for (j = 0; j < 1; j++) {
-            var userColumn = document.createElement('td');
-            userColumn.innerHTML = userNode[i];
-            userRow.appendChild(userColumn);
-        }
-        for (k = 0; k < 1; k++) {
-            var userColumn = document.createElement('td');
-            userColumn.innerHTML = userWay[i];      
-            userRow.appendChild(userColumn);
-        }
-        
+        var nodeCell = document.createElement('td');
+        nodeCell.innerHTML = userNode[i];
+        userRow.appendChild(nodeCell);
+        var wayCell = document.createElement('td');
+        wayCell.innerHTML = userWay[i];      
+        userRow.appendChild(wayCell);
+        var userTotal = userNode[i] + userWay[i];
+        var userTotalCell = document.createElement('td');
+        userTotalCell.innerHTML = userTotal;
+        userRow.appendChild(userTotalCell);
         tableBody.appendChild(userRow);
+
+        nodeTotal = nodeTotal + userNode[i];
+        wayTotal = wayTotal + userWay[i];
+        
     }
+
+    var teamTotal = nodeTotal+wayTotal;
+
+    var totalRow = document.createElement('tr'); 
+    totalRow.setAttribute('class','fill-gray');
+    var totalLabel = document.createElement('td');
+    totalLabel.innerHTML = 'Team Total';
+    totalRow.appendChild(totalLabel);
+    var nodeTotalCell = document.createElement('td');
+    nodeTotalCell .innerHTML = nodeTotal;
+    totalRow.appendChild(nodeTotalCell );
+    var wayTotalCell  = document.createElement('td');
+    wayTotalCell.innerHTML = wayTotal;
+    totalRow.appendChild(wayTotalCell);
+    var teamTotalCell  = document.createElement('td');
+    teamTotalCell.innerHTML = teamTotal.toString().bold();
+    totalRow.appendChild(teamTotalCell);
+    tableBody.appendChild(totalRow);
 }
 
 
@@ -195,7 +218,6 @@ $('#submit').on('click', function() {
           // 3.2 Merge ways to osmData
           // 3.3 Render the table in the callback.
           console.log('# Okay ways');
-          console.log(resultsWay);
           for (var i = 0;i < formData.users.length; i++) {
                wayCount[i] = resultsWay[i];
             }
@@ -206,7 +228,7 @@ $('#submit').on('click', function() {
             $('#download').attr('download', 'data.json'); 
             createTable(formData.users,nodeCount,wayCount);
             $('#count').css('display', 'block');
-            $('#download').css('display', 'inline-block');
+            //$('#download').css('display', 'inline-block');
             $('.loading').css('display', 'none');
             
         });
