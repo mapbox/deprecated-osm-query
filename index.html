@@ -4,6 +4,7 @@
     <title>osm-query</title>
     <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
     <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="lib/jquery.tablesorter.min.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.js'></script>
     <link href='https://api.mapbox.com/mapbox.js/v2.2.1/mapbox.css' rel='stylesheet' />
     <link rel="stylesheet" type="text/css" href="css/app.css">
@@ -27,17 +28,18 @@
 
             <fieldset class='col6' >
                 <label>From</label>
-                <input id='fromdate' type='date' placeholder='yyyy-MM-dd' />
+                <input id='fromdate' type='datetime-local'  placeholder='yyyy-MM-dd' />
             </fieldset>
+            </br>
 
             <fieldset class='col6' >
                 <label>To</label>
-                <input id='todate' type='date' placeholder='yyyy-MM-dd' />
+                <input id='todate' type='datetime-local' placeholder='yyyy-MM-dd' />
             </fieldset>
 
             <div class='col6'>
                 <div class='loading fill-gray' style='display:none'></div>
-                <a href='#' class='button'>Submit</a>
+                <a href='#' id='submit' class='button'>Submit</a>
                 <a href='#' target='_blank' class='button fill-green' id='download' style='display:none'>Download</a>
             </div>
         </form>
@@ -47,5 +49,7 @@
 
 <div id='map'></div>
 </body>
+
+
 <script src="dist/bundle.js"></script>
 </html>
