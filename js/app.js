@@ -1,15 +1,54 @@
+//To extract node and way count for users over a given time period and area bounds.
+
 var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
+var moment = require('moment');
+
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
-var map = L.mapbox.map('map', 'mapbox.streets');
+var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
 
 var formData = {};
+var nodeCount = []; 
+var wayCount = [];
+var nodeTotal = 0;
+var wayTotal = 0;
+
+$("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01')); 
+$("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
 var head = '[out:json];'
-var q = head+"node(user:'%s')%s%s(%s);out;";
+var q = head+"%s(user:'%s')%s%s(%s);out;";
 
-function queryOverpass (u, callback) {
+//runs queries for nodes
+function getNodes (user, callback) {
+    var url = getQuery('node',user);
+    $('.loading').css('display', 'inline-block');
+    $.ajax(url)
+    .done(function(data) { 
+        var geojson = osmtogeojson(data); 
+        callback(null, geojson);
+    })
+    .fail(function() { 
+        callback('error', null);
+    });
+}
+
+//runs queries for ways
+function getWays (user, callback) {
+    var url = getQuery('way',user);
+    $('.loading').css('display', 'inline-block');
+    $.ajax(url)
+    .done(function(data) { 
+        callback(null, data); 
+    })
+    .fail(function() { 
+        callback('error', null);
+    });
+}
+
+//constructs overpass query based on user inputs
+function getQuery (type, u) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
     var overpassDate = '';
@@ -24,44 +63,49 @@ function queryOverpass (u, callback) {
         formData.tags.forEach(function (tag) {
             var key = tag.split('=')[0];
             var value = tag.split('=')[1];
-            console.log(value);
             if (value === undefined) {
-                console.log('here')
                 overpassFilter = overpassFilter+"['"+key+"']";
             } else {
                 overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
             }
         });
     }
-    var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
 
-    $('.loading').css('display', 'inline-block');
-    $.ajax(url)
-    .done(function(data) {
-        console.log(data);
-        var geojson = osmtogeojson(data);
-        callback(null, geojson);
-    });
+    // 
+    var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox); 
+    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query; 
+    return url;
 }
 
-function errorNotice (message) {
+//displays error messages to the user
+function errorNotice (message, time) {
     $('.note').css('display', 'block');
     $('.note p').text(message);
-    window.setTimeout(function() {
+    if(time)
+    {
+        window.setTimeout(function() {
         $('.note').css('display', 'none');
-    }, 2000);
+    }, time);
+    }
+    else
+    {
+        window.setTimeout(function() {
+            $('.note').css('display', 'none');
+        }, 2000);
+    }
 
 }
 
-function createTable(userList,userCount) {
+//generates a table to display node and way counts
+function createTable(userList, userNode, userWay) {
 
     if ($('table')) {
-        $('table').remove();
+        $('table').remove(); 
     }
 
     var tableDiv = document.getElementById('count');
     var table = document.createElement('table');
+    table.setAttribute('id','countTable');
     tableDiv.appendChild(table);
 
     $('table').addClass('prose');
@@ -69,7 +113,8 @@ function createTable(userList,userCount) {
 
     var tableHead = document.createElement('thead');
     table.appendChild(tableHead);
-    $('thead').append('<tr><th>User</th><th>Node</th><th>Ways</th></tr>');
+    $('thead').append('<tr><th>User</th><th>Node</th><th>Way</th><th>Total</th></tr>');
+
 
     var tableBody = document.createElement('tbody');
     table.appendChild(tableBody);
@@ -80,18 +125,48 @@ function createTable(userList,userCount) {
         var userCell = document.createElement('td');
         userCell.innerHTML = userList[i];
         userRow.appendChild(userCell);
-
-        for (j = 0; j < 2; j++) {
-            var userColumn = document.createElement('td');
-            userColumn.innerHTML = userCount[i].features.length;
-            userRow.appendChild(userColumn);
-        }
+        var nodeCell = document.createElement('td');
+        nodeCell.innerHTML = userNode[i];
+        userRow.appendChild(nodeCell);
+        var wayCell = document.createElement('td');
+        wayCell.innerHTML = userWay[i];      
+        userRow.appendChild(wayCell);
+        var userTotal = userNode[i] + userWay[i]; 
+        var userTotalCell = document.createElement('td');
+        userTotalCell.innerHTML = userTotal;
+        userRow.appendChild(userTotalCell);
         tableBody.appendChild(userRow);
+
+        nodeTotal = nodeTotal + userNode[i]; 
+        wayTotal = wayTotal + userWay[i];
+        
     }
+
+    var teamTotal = nodeTotal+wayTotal; 
+
+
+    var tableFoot =document.createElement('tfoot');
+    var totalRow = document.createElement('tr'); 
+    totalRow.setAttribute('class','fill-gray');
+    var totalLabel = document.createElement('td');
+    totalLabel.innerHTML = 'Team Total';
+    totalRow.appendChild(totalLabel);
+    var nodeTotalCell = document.createElement('td');
+    nodeTotalCell .innerHTML = nodeTotal;
+    totalRow.appendChild(nodeTotalCell );
+    var wayTotalCell  = document.createElement('td');
+    wayTotalCell.innerHTML = wayTotal;
+    totalRow.appendChild(wayTotalCell);
+    var teamTotalCell  = document.createElement('td');
+    teamTotalCell.innerHTML = teamTotal.toString().bold();
+    totalRow.appendChild(teamTotalCell);
+    tableFoot.appendChild(totalRow);
+    table.appendChild(tableFoot);
 }
 
 
-$('.button').on('click', function() {
+
+$('#submit').on('click', function() {
     $('#count').css('display', 'none');
 
     var osmData = {
@@ -99,11 +174,12 @@ $('.button').on('click', function() {
         'features': []
     }
 
+   
     formData = {
         'users': $('#usernames').val().split(','),
         'tags': $('#tags').val().split(','),
-        'fromDate': $('#fromdate').val() ? new Date($('#todate').val()).toISOString() : '',
-        'toDate': $('#todate').val() ? new Date($('#todate').val()).toISOString() : ''
+        'fromDate': moment($('#fromdate').val()).utc().toISOString(),
+        'toDate': moment($('#todate').val()).utc().toISOString()
     };
 
 
@@ -111,26 +187,67 @@ $('.button').on('click', function() {
         errorNotice('Specify at least one username');
         return;
     };
+    
+    
+    if (formData.fromDate === 'Invalid date') {
+        fromdate_default = moment().format('YYYY-MM-DD[T]00:00:01'); 
+        formData.fromDate = moment(fromdate_default).utc().toISOString();
+    };
+    if (formData.toDate === 'Invalid date') {
+        todate_default = moment().format('YYYY-MM-DD[T]HH:mm:ss'); 
+        formData.toDate = moment(todate_default).utc().toISOString();
+    };
 
-    async.map(formData.users, queryOverpass, function (err, results) {
-        Array.prototype.push.apply(osmData.features, results[0].features); 
+    
+    // getNodes function iterated over user list using async utility. Return values from each call to the function is stored in resultsNode.
+    async.map(formData.users, getNodes, function (err, resultsNode) {
+        if (err) {
+                errorNotice('Oops! Something went wrong...',10000);
+                $('.loading').css('display', 'none');
+               
+            } 
 
-        var json = JSON.stringify(osmData);
+        else {
+        
+        console.log('# Okay nodes');
+        Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
+      
+        for(i = 0; i < formData.users.length; i++){
+            nodeCount[i] = resultsNode[i].features.length;
+        }
 
-        var blob = new Blob([json], {type: "application/json"});
-        var url = URL.createObjectURL(blob);
+         // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
+        async.map(formData.users, getWays, function (err, resultsWay) {
+            if (err) {
+                 errorNotice('Oops! Something went wrong...',10000);
+                 $('.loading').css('display', 'none');
+                 
+            } 
+            else {
+           
+           console.log('# Okay ways');
+          
+           for (var i = 0;i < formData.users.length; i++) {
+               wayCount[i] = resultsWay[i].elements.length; 
+            }
+            var json = JSON.stringify(osmData);
+            var blob = new Blob([json], {type: "application/json"});
+            var url = URL.createObjectURL(blob);
+            $('#download').attr('href', url);
+            $('#download').attr('download', 'data.json'); 
+            createTable(formData.users, nodeCount, wayCount);
+            $('#count').css('display', 'block');
+            $("#countTable").tablesorter(); 
+            //$('#download').css('display', 'inline-block'); 
+            $('.loading').css('display', 'none');
 
+            }
 
-        $('#download').attr('href', url);
-        $('#download').attr('download', 'data.json');
+           
+            
+        });
 
-        createTable(formData.users,results);
-
-
-        $('#count').css('display', 'block');
-        $('#download').css('display', 'inline-block');
-        $('.loading').css('display', 'none');
+      } 
 
     });
-
 });

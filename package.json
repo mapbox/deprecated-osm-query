@@ -19,7 +19,9 @@
   "dependencies": {
     "async": "^1.4.2",
     "browserify": "^11.0.1",
+    "moment": "^2.10.6",
     "osmtogeojson": "^2.2.5",
     "underscore": "^1.8.3"
-  }
+  },
+  "devDependencies": {}
 }
