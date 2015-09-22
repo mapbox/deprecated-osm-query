@@ -10,10 +10,10 @@ L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg
 var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
 
 var formData = {};
-var nodeCount =[]; 
-var wayCount =[];
-var nodeTotal =0;
-var wayTotal =0;
+var nodeCount = []; 
+var wayCount = [];
+var nodeTotal = 0;
+var wayTotal = 0;
 
 $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01')); 
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
@@ -49,7 +49,7 @@ function getWays (user, callback) {
 }
 
 //constructs overpass query based on user inputs
-function getQuery (type,u) {
+function getQuery (type, u) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
     var overpassDate = '';
@@ -90,7 +90,6 @@ function errorNotice (message, time) {
     }
     else
     {
-
         window.setTimeout(function() {
             $('.note').css('display', 'none');
         }, 2000);
@@ -99,7 +98,7 @@ function errorNotice (message, time) {
 }
 
 //generates a table to display node and way counts
-function createTable(userList,userNode,userWay) {
+function createTable(userList, userNode, userWay) {
 
     if ($('table')) {
         $('table').remove(); 
@@ -107,6 +106,7 @@ function createTable(userList,userNode,userWay) {
 
     var tableDiv = document.getElementById('count');
     var table = document.createElement('table');
+    table.setAttribute('id','countTable');
     tableDiv.appendChild(table);
 
     $('table').addClass('prose');
@@ -145,6 +145,8 @@ function createTable(userList,userNode,userWay) {
 
     var teamTotal = nodeTotal+wayTotal; 
 
+
+    var tableFoot =document.createElement('tfoot');
     var totalRow = document.createElement('tr'); 
     totalRow.setAttribute('class','fill-gray');
     var totalLabel = document.createElement('td');
@@ -159,7 +161,8 @@ function createTable(userList,userNode,userWay) {
     var teamTotalCell  = document.createElement('td');
     teamTotalCell.innerHTML = teamTotal.toString().bold();
     totalRow.appendChild(teamTotalCell);
-    tableBody.appendChild(totalRow);
+    tableFoot.appendChild(totalRow);
+    table.appendChild(tableFoot);
 }
 
 
@@ -204,6 +207,8 @@ $('#submit').on('click', function() {
                 $('.loading').css('display', 'none');
                
             } 
+
+        else {
         
         console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
@@ -219,6 +224,7 @@ $('#submit').on('click', function() {
                  $('.loading').css('display', 'none');
                  
             } 
+            else {
            
            console.log('# Okay ways');
           
@@ -230,16 +236,19 @@ $('#submit').on('click', function() {
             var url = URL.createObjectURL(blob);
             $('#download').attr('href', url);
             $('#download').attr('download', 'data.json'); 
-            createTable(formData.users,nodeCount,wayCount);
+            createTable(formData.users, nodeCount, wayCount);
             $('#count').css('display', 'block');
+            $("#countTable").tablesorter(); 
             //$('#download').css('display', 'inline-block'); 
             $('.loading').css('display', 'none');
+
+            }
 
            
             
         });
 
-       
+      } 
 
     });
 });
