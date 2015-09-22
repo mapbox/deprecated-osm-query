@@ -16,45 +16,28 @@ $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss')); 
 
 var head = '[out:json];'
-var q = head+"node(user:'%s')%s%s(%s);out;";
-var qWay = head+"way(user:'%s')%s%s(%s);out;";
+var q = head+"%s(user:'%s')%s%s(%s);out;";
 
-function queryOverpass (u, callback) {
-    var bbox = map.getBounds().toBBoxString().split(',');
-    var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
-    var overpassDate = '';
-    var overpassFilter = '';
-    if (formData.fromDate != '' && formData.toDate != '') {
-        overpassDate = "(changed:'"+formData.fromDate+"','"+formData.toDate+"')"
-    } else if (formData.fromDate != '' && formData.toDate === '') {
-        overpassDate = "(changed:'"+formData.fromDate+"')";
-    }
-
-    if (formData.tags.length && formData.tags[0] != '') {
-        formData.tags.forEach(function (tag) {
-            var key = tag.split('=')[0];
-            var value = tag.split('=')[1];
-            if (value === undefined) {
-                overpassFilter = overpassFilter+"['"+key+"']";
-            } else {
-                overpassFilter = overpassFilter+"['"+key+"'="+"'"+value+"']";
-            }
-        });
-    }
-    var query = util.format(q, u, overpassDate, overpassFilter, overpassBbox);
-    console.log('#node query', query); 
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
-
+function getNodes (user, callback) {
+    var url = getQuery('node');
     $('.loading').css('display', 'inline-block');
     $.ajax(url)
     .done(function(data) {
-        console.log(data);
         var geojson = osmtogeojson(data);
         callback(null, geojson);
     });
 }
 
-function queryOverpassWay (u, callback) {
+function getWays (user, callback) {
+    var url = getQuery('way');
+    $('.loading').css('display', 'inline-block');
+    $.ajax(url)
+    .done(function(data) {
+        callback(null, data);
+    });
+}
+
+function getQuery (type) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
     var overpassDate = '';
@@ -76,20 +59,12 @@ function queryOverpassWay (u, callback) {
             }
         });
     }
-    var query = util.format(qWay, u, overpassDate, overpassFilter, overpassBbox);
-    console.log('#way query', query); 
+    var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox);
+    console.log('#node query', query); 
     var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query;
-    
-
-    $('.loading').css('display', 'inline-block');
-    $.ajax(url)
-    .done(function(data) {
-        console.log(data);
-        //var geojson = osmtogeojson(data);
-        callback(null,data.elements.length);
-
-    });
+    return url;
 }
+
 
 function errorNotice (message) {
     $('.note').css('display', 'block');
@@ -199,23 +174,14 @@ $('#submit').on('click', function() {
 
     
 
-    async.map(formData.users, queryOverpass, function (err, resultsNode) {
-        // 1. Get the node count
-        // 2. Merge nodes to osmData
-        // 3. Do async.map for ways.
-          // 3.1 Get ways count
-          // 3.2 Merge ways to osmData
-          // 3.3 Render the table in the callback.
+    async.map(formData.users, getNodes, function (err, resultsNode) {
         console.log('# Okay nodes');
         Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
         for(i = 0; i < formData.users.length; i++){
             nodeCount[i] = resultsNode[i].features.length;
         }
 
-        async.map(formData.users, queryOverpassWay, function (err, resultsWay) {
-            // 3.1 Get ways count
-          // 3.2 Merge ways to osmData
-          // 3.3 Render the table in the callback.
+        async.map(formData.users, getWays, function (err, resultsWay) {
           console.log('# Okay ways');
           for (var i = 0;i < formData.users.length; i++) {
                wayCount[i] = resultsWay[i];
