@@ -4,6 +4,7 @@ var osmtogeojson = require('osmtogeojson');
 var util = require('util');
 var async = require('async');
 var moment = require('moment');
+var _ = require('underscore');
 
 L.mapbox.accessToken = 'pk.eyJ1IjoiZ2VvaGFja2VyIiwiYSI6ImFIN0hENW8ifQ.GGpH9gLyEg0PZf3NPQ7Vrg';
 var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderControl('mapbox.places'));
@@ -18,7 +19,7 @@ $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
 var head = '[out:json];'
-var q = head+"%s(user:'%s')%s%s(%s);out;";
+var q = head+"%s(user:'%s')%s%s(%s);out body;>;out skel qt;";
 
 //runs queries for nodes
 function getNodes (user, callback) {
@@ -205,49 +206,86 @@ $('#submit').on('click', function() {
                 errorNotice('Oops! Something went wrong...',10000);
                 $('.loading').css('display', 'none');
                
-            } 
-
-        else {
+        } else {
         
-        console.log('# Okay nodes');
-        Array.prototype.push.apply(osmData.features, resultsNode[0].features); 
-      
-        for(i = 0; i < formData.users.length; i++){
-            nodeCount[i] = resultsNode[i].features.length;
-        }
+            console.log('# Okay nodes', resultsNode);
 
+            console.log("osm data", osmData);
+            for(i = 0; i < formData.users.length; i++){
+                Array.prototype.push.apply(osmData.features, resultsNode[i].features); 
+
+                nodeCount[i] = resultsNode[i].features.length;
+            }
+            var nodeLookupTable = {};
+            for (j = 0; j < osmData.features.length; j++) {
+                var feature = osmData.features[j];
+                var id = feature.properties.id;
+                var coords = feature.geometry.coordinates;
+                if (coords === null) {
+                    console.log("coords are null!", feature);
+                }
+                nodeLookupTable[id] = coords;
+            }
          // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
-        async.map(formData.users, getWays, function (err, resultsWay) {
-            if (err) {
-                 errorNotice('Oops! Something went wrong...',10000);
-                 $('.loading').css('display', 'none');
+            async.map(formData.users, getWays, function (err, resultsWay) {
+                if (err) {
+                    errorNotice('Oops! Something went wrong...',10000);
+                    $('.loading').css('display', 'none');
                  
-            } 
-            else {
+                } else {
            
-           console.log('# Okay ways');
-          
-           for (var i = 0;i < formData.users.length; i++) {
-               wayCount[i] = resultsWay[i].elements.length; 
-            }
-            var json = JSON.stringify(osmData);
-            var blob = new Blob([json], {type: "application/json"});
-            var url = URL.createObjectURL(blob);
-            $('#download').attr('href', url);
-            $('#download').attr('download', 'data.json'); 
-            createTable(formData.users, nodeCount, wayCount);
-            $('#count').css('display', 'block');
-            $("#countTable").tablesorter(); 
-            //$('#download').css('display', 'inline-block'); 
-            $('.loading').css('display', 'none');
+                    console.log('# Okay ways', resultsWay);
+                    var waysGeoJSON = {
+                        'type': 'FeatureCollection',
+                        'features': []
+                    };
+                    for (var i = 0;i < formData.users.length; i++) {
+                        wayCount[i] = resultsWay[i].elements.length; 
+                        var thisResult = resultsWay[i];
+                        for (var j = 0, length = thisResult.elements.length; j < length; j++) {
+                            var thisElement = thisResult.elements[j];
+                            var thisFeature = {
+                                'type': 'Feature',
+                                'properties': thisElement.tags,
+                                'geometry': {
+                                    'type': 'LineString',
+                                    'coordinates': []
+                                }
+                            };
+                            //console.log("this element", thisElement);
+                            if (thisElement['type'] === 'way') {
+                                for (var k = 0; k < thisElement.nodes.length; k++) {
+                                    var thisNode = thisElement.nodes[k];
+                                    if (!nodeLookupTable.hasOwnProperty(thisNode)) {
+                                        console.log("node not found in table", thisNode);
+                                    } else {
+                                        var coords = nodeLookupTable[thisNode];
+                                        thisFeature.geometry.coordinates.push(coords);
+                                    }
+                                }
+                            }
+                            waysGeoJSON.features.push(thisFeature);
+                        }
+                    }
+                    console.log("geojson", waysGeoJSON);
+                    var json = JSON.stringify(waysGeoJSON);
+                    var blob = new Blob([json], {type: "application/json"});
+                    var url = URL.createObjectURL(blob);
+                    $('#download').attr('href', url);
+                    $('#download').attr('download', 'data.json'); 
+                    createTable(formData.users, nodeCount, wayCount);
+                    $('#count').css('display', 'block');
+                    $("#countTable").tablesorter(); 
+                    $('#download').css('display', 'inline-block'); 
+                    $('.loading').css('display', 'none');
 
-            }
+                }
 
            
             
-        });
+            });
 
-      } 
+        } 
 
     });
 });
