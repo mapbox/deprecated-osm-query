@@ -19,7 +19,7 @@ $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
 var head = '[out:json];'
-var q = head+"%s(user:'%s')%s%s(%s);out body;>;out skel qt;";
+var q = head+"%s(user:'%s')%s%s(%s);(._;>;);out body;";
 
 //runs queries for nodes
 function getNodes (user, callback) {
