@@ -233,7 +233,9 @@ $('#submit').on('click', function() {
 
    
     formData = {
-        'users': $('#usernames').val().split(','),
+        'users': $('#usernames').val().split(',').map(function(name) {
+            return name.trim();
+        }),
         'tags': $('#tags').val().split(','),
         'fromDate': moment($('#fromdate').val()).utc().toISOString(),
         'toDate': moment($('#todate').val()).utc().toISOString()
@@ -331,39 +333,17 @@ $('#submit').on('click', function() {
                         geoJSON.features.push(nodeGeoJSON);
                     });
                     for (var i = 0;i < formData.users.length; i++) {
-                        wayCount[i] = resultsWay[i].elements.length; 
-                        //var thisResult = resultsWay[i];
-                        // for (var j = 0, length = thisResult.elements.length; j < length; j++) {
-                        //     var thisElement = thisResult.elements[j];
-                        //     var thisFeature = {
-                        //         'type': 'Feature',
-                        //         'properties': thisElement.tags,
-                        //         'geometry': {
-                        //             'type': 'LineString',
-                        //             'coordinates': []
-                        //         }
-                        //     };
-                        //     //console.log("this element", thisElement);
-                        //     if (thisElement['type'] === 'way') {
-                        //         for (var k = 0; k < thisElement.nodes.length; k++) {
-                        //             var thisNode = thisElement.nodes[k];
-                        //             if (!nodeLookupTable.hasOwnProperty(thisNode)) {
-                        //                 console.log("node not found in table", thisNode);
-                        //             } else {
-                        //                 var coords = nodeLookupTable[thisNode];
-                        //                 thisFeature.geometry.coordinates.push(coords);
-                        //             }
-                        //         }
-                        //     }
-                        //     waysGeoJSON.features.push(thisFeature);
-                        // }
+                        wayCount[i] = _.filter(resultsWay[i].elements, function(elem) {
+                            return elem['type'] === 'way';
+                        }).length; 
                     }
-                    //console.log("geojson", waysGeoJSON);
                     var json = JSON.stringify(geoJSON, null, 2);
                     var blob = new Blob([json], {type: "application/json"});
                     var url = URL.createObjectURL(blob);
                     $('#download').attr('href', url);
-                    $('#download').attr('download', 'data.json'); 
+                    $('#download').attr('download', 'data.json');
+                    console.log("node count", nodeCount);
+                    console.log("way count", wayCount);
                     createTable(formData.users, nodeCount, wayCount);
                     $('#count').css('display', 'block');
                     $("#countTable").tablesorter(); 
