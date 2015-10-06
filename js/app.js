@@ -165,7 +165,63 @@ function createTable(userList, userNode, userWay) {
     table.appendChild(tableFoot);
 }
 
+function getNodeGeoJSON(node) {
+    var props = node.tags;
+    props.id = node.id;
+    return {
+        'type': 'Feature',
+        'properties': props,
+        'geometry': {
+            'type': 'Point',
+            'coordinates': [node.lon, node.lat]
+        }
+    };
+}
 
+function getWayGeoJSON(way, nodeLookup) {
+    var props = way.tags;
+    props.id = way.id;
+    var firstNode = way.nodes[0];
+    var lastNode = way.nodes[way.nodes.length - 1];
+    var geomType;
+    if (firstNode === lastNode) {
+        return getPolygonGeoJSON(props, way.nodes, nodeLookup);
+    } else {
+        return getLineStringGeoJSON(props, way.nodes, nodeLookup);
+    }
+}
+
+function getLineStringGeoJSON(properties, nodes, nodeLookup) {
+    var json = {
+        'type': 'Feature',
+        'properties': properties,
+        'geometry': {
+            'type': 'LineString',
+            'coordinates': []
+        }
+    };
+    nodes.forEach(function(node) {
+        var nodeCoords = nodeLookup[node];
+        json.geometry.coordinates.push(nodeCoords);
+    });
+    return json;
+}
+
+function getPolygonGeoJSON(properties, nodes, nodeLookup) {
+    var json = {
+        'type': 'Feature',
+        'properties': properties,
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[]]
+        }
+    };
+    nodes.forEach(function(node) {
+        var nodeCoords = nodeLookup[node];
+        json.geometry.coordinates[0].push(nodeCoords);
+    });
+    return json;
+}
 
 $('#submit').on('click', function() {
     $('#count').css('display', 'none');
@@ -246,32 +302,33 @@ $('#submit').on('click', function() {
                     var ways = _.filter(allUsersData, function(obj) {
                         return obj['type'] === 'way';
                     });
+                    
                     var nodeLookup = {};
+                    var nodesWithTags = [];
+                    
                     nodes.forEach(function(node) {
                         nodeLookup[node.id] = [node.lon, node.lat];
+                        if (node.hasOwnProperty('tags')) {
+                            nodesWithTags.push(node);
+                        }
                     });
-                    var waysGeoJSON = {
+                    
+                    var geoJSON = {
                         'type': 'FeatureCollection',
                         'features': []
                     };
+                    
+                    console.log("nodes", nodes);
                     console.log("ways", ways);
+                    
                     ways.forEach(function(way) {
-                        var props = way.tags;
-                        props.id = way.id;
-                        //var geometryType = getGeometryType(way);
-                        var wayGeoJSON = {
-                            'type': 'Feature',
-                            'properties': props,
-                            'geometry': {
-                                'type': 'LineString',
-                                'coordinates': []
-                            }
-                        };
-                        way.nodes.forEach(function(node) {
-                            var nodeCoords = nodeLookup[node];
-                            wayGeoJSON.geometry.coordinates.push(nodeCoords);
-                        });
-                        waysGeoJSON.features.push(wayGeoJSON);
+                        var wayGeoJSON = getWayGeoJSON(way, nodeLookup);
+                        geoJSON.features.push(wayGeoJSON);
+                    });
+
+                    nodesWithTags.forEach(function(node) {
+                        var nodeGeoJSON = getNodeGeoJSON(node);
+                        geoJSON.features.push(nodeGeoJSON);
                     });
                     for (var i = 0;i < formData.users.length; i++) {
                         wayCount[i] = resultsWay[i].elements.length; 
@@ -301,8 +358,8 @@ $('#submit').on('click', function() {
                         //     waysGeoJSON.features.push(thisFeature);
                         // }
                     }
-                    console.log("geojson", waysGeoJSON);
-                    var json = JSON.stringify(waysGeoJSON, null, 2);
+                    //console.log("geojson", waysGeoJSON);
+                    var json = JSON.stringify(geoJSON, null, 2);
                     var blob = new Blob([json], {type: "application/json"});
                     var url = URL.createObjectURL(blob);
                     $('#download').attr('href', url);
