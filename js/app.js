@@ -12,8 +12,7 @@ var map = L.mapbox.map('map', 'mapbox.streets').addControl(L.mapbox.geocoderCont
 var formData = {};
 var nodeCount = []; 
 var wayCount = [];
-var nodeTotal = 0;
-var wayTotal = 0;
+
 
 $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01')); 
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
@@ -99,7 +98,8 @@ function errorNotice (message, time) {
 
 //generates a table to display node and way counts
 function createTable(userList, userNode, userWay) {
-
+    var nodeTotal = 0;
+    var wayTotal = 0;
     if ($('table')) {
         $('table').remove(); 
     }
