@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-//To extract node and way count for users over a given time period and area bounds.
+// To extract node and way count for users over a given time period and area bounds.
 
 var osmtogeojson = require('osmtogeojson');
 var util = require('util');
@@ -21,7 +21,7 @@ $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));
 var head = '[out:json];'
 var q = head+"%s(user:'%s')%s%s(%s);(._;>;);out body;";
 
-//runs queries for nodes
+// runs queries for nodes
 function getNodes (user, callback) {
     var url = getQuery('node',user);
     $('.loading').css('display', 'inline-block');
@@ -35,7 +35,7 @@ function getNodes (user, callback) {
     });
 }
 
-//runs queries for ways
+// runs queries for ways
 function getWays (user, callback) {
     var url = getQuery('way',user);
     $('.loading').css('display', 'inline-block');
@@ -48,7 +48,7 @@ function getWays (user, callback) {
     });
 }
 
-//constructs overpass query based on user inputs
+// constructs overpass query based on user inputs
 function getQuery (type, u) {
     var bbox = map.getBounds().toBBoxString().split(',');
     var overpassBbox = bbox[1]+','+bbox[0]+','+bbox[3]+','+bbox[2];
@@ -78,7 +78,7 @@ function getQuery (type, u) {
     return url;
 }
 
-//displays error messages to the user
+// displays error messages to the user
 function errorNotice (message, time) {
     $('.note').css('display', 'block');
     $('.note p').text(message);
@@ -97,7 +97,7 @@ function errorNotice (message, time) {
 
 }
 
-//generates a table to display node and way counts
+// generates a table to display node and way counts
 function createTable(userList, userNode, userWay) {
     var nodeTotal = 0;
     var wayTotal = 0;
@@ -166,6 +166,8 @@ function createTable(userList, userNode, userWay) {
     table.appendChild(tableFoot);
 }
 
+
+// get geojson for a point type
 function getNodeGeoJSON(node) {
     var props = node.tags;
     props.id = node.id;
@@ -179,6 +181,7 @@ function getNodeGeoJSON(node) {
     };
 }
 
+// get geojson for a "way" - either line or polygon
 function getWayGeoJSON(way, nodeLookup) {
     var props = way.tags;
     props.id = way.id;
@@ -192,6 +195,7 @@ function getWayGeoJSON(way, nodeLookup) {
     }
 }
 
+// get geojson for a line
 function getLineStringGeoJSON(properties, nodes, nodeLookup) {
     var json = {
         'type': 'Feature',
@@ -208,6 +212,7 @@ function getLineStringGeoJSON(properties, nodes, nodeLookup) {
     return json;
 }
 
+// get geojson for a polygon
 function getPolygonGeoJSON(properties, nodes, nodeLookup) {
     var json = {
         'type': 'Feature',
@@ -226,12 +231,6 @@ function getPolygonGeoJSON(properties, nodes, nodeLookup) {
 
 $('#submit').on('click', function() {
     $('#count').css('display', 'none');
-
-    var osmData = {
-        'type': "FeatureCollection",
-        'features': []
-    }
-
    
     formData = {
         'users': $('#usernames').val().split(',').map(function(name) {
@@ -267,25 +266,11 @@ $('#submit').on('click', function() {
                
         } else {
         
-            console.log('# Okay nodes', resultsNode);
-
-            console.log("osm data", osmData);
             for(i = 0; i < formData.users.length; i++){
-                Array.prototype.push.apply(osmData.features, resultsNode[i].features); 
-
                 nodeCount[i] = resultsNode[i].features.length;
             }
-            // var nodeLookupTable = {};
-            // for (j = 0; j < osmData.features.length; j++) {
-            //     var feature = osmData.features[j];
-            //     var id = feature.properties.id;
-            //     var coords = feature.geometry.coordinates;
-            //     if (coords === null) {
-            //         console.log("coords are null!", feature);
-            //     }
-            //     nodeLookupTable[id] = coords;
-            // }
-         // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
+
+            // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
             async.map(formData.users, getWays, function (err, resultsWay) {
                 if (err) {
                     errorNotice('Oops! Something went wrong...',10000);
@@ -293,20 +278,26 @@ $('#submit').on('click', function() {
                  
                 } else {
            
-                    console.log('# Okay ways', resultsWay);
+                    // first we flatten all the data for all users into a single array
                     var allUsersData = [];
                     resultsWay.forEach(function(v) {
                         Array.prototype.push.apply(allUsersData, v.elements);
                     });
 
+                    // get only nodes
                     var nodes = _.filter(allUsersData, function(obj) {
                         return obj['type'] === 'node';
                     });
+
+                    // get only ways
                     var ways = _.filter(allUsersData, function(obj) {
                         return obj['type'] === 'way';
                     });
                     
+                    // we use node lookup to make looking up lat-lng of a node id more efficient
                     var nodeLookup = {};
+
+                    // we identify nodes with tags to add them as Point features to the GeoJSON
                     var nodesWithTags = [];
                     
                     nodes.forEach(function(node) {
@@ -321,30 +312,36 @@ $('#submit').on('click', function() {
                         'features': []
                     };
                     
-                    console.log("nodes", nodes);
-                    console.log("ways", ways);
+                    // console.log("nodes", nodes);
+                    // console.log("ways", ways);
                     
+                    // add GeoJSON for ways
                     ways.forEach(function(way) {
                         var wayGeoJSON = getWayGeoJSON(way, nodeLookup);
                         geoJSON.features.push(wayGeoJSON);
                     });
 
+                    // add GeoJSON for nodes
                     nodesWithTags.forEach(function(node) {
                         var nodeGeoJSON = getNodeGeoJSON(node);
                         geoJSON.features.push(nodeGeoJSON);
                     });
+
+                    // calculate per user way count
                     for (var i = 0;i < formData.users.length; i++) {
                         wayCount[i] = _.filter(resultsWay[i].elements, function(elem) {
                             return elem['type'] === 'way';
                         }).length; 
                     }
+
+                    // stringify geojson and create download blob
                     var json = JSON.stringify(geoJSON, null, 2);
                     var blob = new Blob([json], {type: "application/json"});
                     var url = URL.createObjectURL(blob);
                     $('#download').attr('href', url);
                     $('#download').attr('download', 'data.json');
-                    console.log("node count", nodeCount);
-                    console.log("way count", wayCount);
+
+                    // render results
                     createTable(formData.users, nodeCount, wayCount);
                     $('#count').css('display', 'block');
                     $("#countTable").tablesorter(); 
