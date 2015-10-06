@@ -162,7 +162,7 @@ function createTable(userList, userNode, userWay) {
 
 // get geojson for a point type
 function getNodeGeoJSON(node) {
-    var props = node.tags;
+    var props = node.tags || {};
     props.id = node.id;
     return {
         'type': 'Feature',
@@ -176,7 +176,7 @@ function getNodeGeoJSON(node) {
 
 // get geojson for a "way" - either line or polygon
 function getWayGeoJSON(way, nodeLookup) {
-    var props = way.tags;
+    var props = way.tags || {};
     props.id = way.id;
     var firstNode = way.nodes[0];
     var lastNode = way.nodes[way.nodes.length - 1];
