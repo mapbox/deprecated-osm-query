@@ -250,7 +250,7 @@ $('#submit').on('click', function() {
 
     
     // getNodes function iterated over user list using async utility. Return values from each call to the function is stored in resultsNode.
-    async.map(formData.users, getNodes, function (err, resultsNode) {
+    async.mapSeries(formData.users, getNodes, function (err, resultsNode) {
         if (err) {
                 errorNotice('Oops! Something went wrong...',10000);
                 $('.loading').css('display', 'none');
@@ -262,7 +262,7 @@ $('#submit').on('click', function() {
             }
 
             // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
-            async.map(formData.users, getWays, function (err, resultsWay) {
+            async.mapSeries(formData.users, getWays, function (err, resultsWay) {
                 if (err) {
                     errorNotice('Oops! Something went wrong...',10000);
                     $('.loading').css('display', 'none');
