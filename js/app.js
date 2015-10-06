@@ -13,7 +13,6 @@ var formData = {};
 var nodeCount = []; 
 var wayCount = [];
 
-
 $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01')); 
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
@@ -71,7 +70,6 @@ function getQuery (type, u) {
         });
     }
 
-    // 
     var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox); 
     var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query; 
     return url;
@@ -116,10 +114,8 @@ function createTable(userList, userNode, userWay) {
     table.appendChild(tableHead);
     $('thead').append('<tr><th>User</th><th>Node</th><th>Way</th><th>Total</th></tr>');
 
-
     var tableBody = document.createElement('tbody');
     table.appendChild(tableBody);
-
 
     for (var i = 0; i < userList.length; i++) {
         var userRow = document.createElement('tr');
@@ -144,8 +140,6 @@ function createTable(userList, userNode, userWay) {
     }
 
     var teamTotal = nodeTotal+wayTotal; 
-
-
     var tableFoot =document.createElement('tfoot');
     var totalRow = document.createElement('tr'); 
     totalRow.setAttribute('class','fill-gray');
@@ -240,12 +234,10 @@ $('#submit').on('click', function() {
         'toDate': moment($('#todate').val()).utc().toISOString()
     };
 
-
     if (formData.users.length && formData.users[0] == '') {
         errorNotice('Specify at least one username');
         return;
     };
-    
     
     if (formData.fromDate === 'Invalid date') {
         fromdate_default = moment().format('YYYY-MM-DD[T]00:00:01'); 
@@ -348,12 +340,7 @@ $('#submit').on('click', function() {
                     $('.loading').css('display', 'none');
 
                 }
-
-           
-            
             });
-
         } 
-
     });
 });
