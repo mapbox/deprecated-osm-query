@@ -20,7 +20,7 @@ $("#fromdate").val(moment().format('YYYY-MM-DD[T]00:00:01'));
 $("#todate").val(moment().format('YYYY-MM-DD[T]HH:mm:ss'));  
 
 var head = '[out:json];'
-var q = head+"%s(user:'%s')%s%s(%s);out body;>;out skel qt;";
+var q = head+"%s(user:'%s')%s%s(%s);(._;>;);out body;";
 
 //runs queries for nodes
 function getNodes (user, callback) {
@@ -217,16 +217,16 @@ $('#submit').on('click', function() {
 
                 nodeCount[i] = resultsNode[i].features.length;
             }
-            var nodeLookupTable = {};
-            for (j = 0; j < osmData.features.length; j++) {
-                var feature = osmData.features[j];
-                var id = feature.properties.id;
-                var coords = feature.geometry.coordinates;
-                if (coords === null) {
-                    console.log("coords are null!", feature);
-                }
-                nodeLookupTable[id] = coords;
-            }
+            // var nodeLookupTable = {};
+            // for (j = 0; j < osmData.features.length; j++) {
+            //     var feature = osmData.features[j];
+            //     var id = feature.properties.id;
+            //     var coords = feature.geometry.coordinates;
+            //     if (coords === null) {
+            //         console.log("coords are null!", feature);
+            //     }
+            //     nodeLookupTable[id] = coords;
+            // }
          // getWays function iterated over user list using async utility. Return values from each call to the function is stored in resultsWay.
             async.map(formData.users, getWays, function (err, resultsWay) {
                 if (err) {
@@ -236,40 +236,74 @@ $('#submit').on('click', function() {
                 } else {
            
                     console.log('# Okay ways', resultsWay);
+                    var allUsersData = [];
+                    resultsWay.forEach(function(v) {
+                        Array.prototype.push.apply(allUsersData, v.elements);
+                    });
+
+                    var nodes = _.filter(allUsersData, function(obj) {
+                        return obj['type'] === 'node';
+                    });
+                    var ways = _.filter(allUsersData, function(obj) {
+                        return obj['type'] === 'way';
+                    });
+                    var nodeLookup = {};
+                    nodes.forEach(function(node) {
+                        nodeLookup[node.id] = [node.lon, node.lat];
+                    });
                     var waysGeoJSON = {
                         'type': 'FeatureCollection',
                         'features': []
                     };
+                    console.log("ways", ways);
+                    ways.forEach(function(way) {
+                        var props = way.tags;
+                        props.id = way.id;
+                        //var geometryType = getGeometryType(way);
+                        var wayGeoJSON = {
+                            'type': 'Feature',
+                            'properties': props,
+                            'geometry': {
+                                'type': 'LineString',
+                                'coordinates': []
+                            }
+                        };
+                        way.nodes.forEach(function(node) {
+                            var nodeCoords = nodeLookup[node];
+                            wayGeoJSON.geometry.coordinates.push(nodeCoords);
+                        });
+                        waysGeoJSON.features.push(wayGeoJSON);
+                    });
                     for (var i = 0;i < formData.users.length; i++) {
                         wayCount[i] = resultsWay[i].elements.length; 
-                        var thisResult = resultsWay[i];
-                        for (var j = 0, length = thisResult.elements.length; j < length; j++) {
-                            var thisElement = thisResult.elements[j];
-                            var thisFeature = {
-                                'type': 'Feature',
-                                'properties': thisElement.tags,
-                                'geometry': {
-                                    'type': 'LineString',
-                                    'coordinates': []
-                                }
-                            };
-                            //console.log("this element", thisElement);
-                            if (thisElement['type'] === 'way') {
-                                for (var k = 0; k < thisElement.nodes.length; k++) {
-                                    var thisNode = thisElement.nodes[k];
-                                    if (!nodeLookupTable.hasOwnProperty(thisNode)) {
-                                        console.log("node not found in table", thisNode);
-                                    } else {
-                                        var coords = nodeLookupTable[thisNode];
-                                        thisFeature.geometry.coordinates.push(coords);
-                                    }
-                                }
-                            }
-                            waysGeoJSON.features.push(thisFeature);
-                        }
+                        //var thisResult = resultsWay[i];
+                        // for (var j = 0, length = thisResult.elements.length; j < length; j++) {
+                        //     var thisElement = thisResult.elements[j];
+                        //     var thisFeature = {
+                        //         'type': 'Feature',
+                        //         'properties': thisElement.tags,
+                        //         'geometry': {
+                        //             'type': 'LineString',
+                        //             'coordinates': []
+                        //         }
+                        //     };
+                        //     //console.log("this element", thisElement);
+                        //     if (thisElement['type'] === 'way') {
+                        //         for (var k = 0; k < thisElement.nodes.length; k++) {
+                        //             var thisNode = thisElement.nodes[k];
+                        //             if (!nodeLookupTable.hasOwnProperty(thisNode)) {
+                        //                 console.log("node not found in table", thisNode);
+                        //             } else {
+                        //                 var coords = nodeLookupTable[thisNode];
+                        //                 thisFeature.geometry.coordinates.push(coords);
+                        //             }
+                        //         }
+                        //     }
+                        //     waysGeoJSON.features.push(thisFeature);
+                        // }
                     }
                     console.log("geojson", waysGeoJSON);
-                    var json = JSON.stringify(waysGeoJSON);
+                    var json = JSON.stringify(waysGeoJSON, null, 2);
                     var blob = new Blob([json], {type: "application/json"});
                     var url = URL.createObjectURL(blob);
                     $('#download').attr('href', url);
