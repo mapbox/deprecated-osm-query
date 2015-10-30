@@ -72,7 +72,7 @@ function getQuery (type, u) {
     }
 
     var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox); 
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query; 
+    var url = 'https://www.overpass-api.de/api/interpreter?data='+query; 
     return url;
 }
 
@@ -426,12 +426,6 @@ $('#submit').on('click', function() {
         );
     }
 
-    function _each(coll, iterator) {
-        return _isArrayLike(coll) ?
-            _arrayEach(coll, iterator) :
-            _forEachOf(coll, iterator);
-    }
-
     function _arrayEach(arr, iterator) {
         var index = -1,
             length = arr.length;
@@ -579,23 +573,26 @@ $('#submit').on('click', function() {
     async.eachOf = function (object, iterator, callback) {
         callback = _once(callback || noop);
         object = object || [];
-        var size = _isArrayLike(object) ? object.length : _keys(object).length;
-        var completed = 0;
-        if (!size) {
-            return callback(null);
-        }
-        _each(object, function (value, key) {
+
+        var iter = _keyIterator(object);
+        var key, completed = 0;
+
+        while ((key = iter()) != null) {
+            completed += 1;
             iterator(object[key], key, only_once(done));
-        });
+        }
+
+        if (completed === 0) callback(null);
+
         function done(err) {
+            completed--;
             if (err) {
                 callback(err);
             }
-            else {
-                completed += 1;
-                if (completed >= size) {
-                    callback(null);
-                }
+            // Check key is null in case iterator isn't exhausted
+            // and done resolved synchronously.
+            else if (key === null && completed <= 0) {
+                callback(null);
             }
         }
     };
@@ -621,7 +618,7 @@ $('#submit').on('click', function() {
                         return callback(null);
                     } else {
                         if (sync) {
-                            async.nextTick(iterate);
+                            async.setImmediate(iterate);
                         } else {
                             iterate();
                         }
@@ -702,7 +699,8 @@ $('#submit').on('click', function() {
 
     function _asyncMap(eachfn, arr, iterator, callback) {
         callback = _once(callback || noop);
-        var results = [];
+        arr = arr || [];
+        var results = _isArrayLike(arr) ? [] : {};
         eachfn(arr, function (value, index, callback) {
             iterator(value, function (err, v) {
                 results[index] = v;
@@ -728,7 +726,7 @@ $('#submit').on('click', function() {
                 callback(err);
             });
         }, function (err) {
-            callback(err || null, memo);
+            callback(err, memo);
         });
     };
 
@@ -736,6 +734,20 @@ $('#submit').on('click', function() {
     async.reduceRight = function (arr, memo, iterator, callback) {
         var reversed = _map(arr, identity).reverse();
         async.reduce(reversed, memo, iterator, callback);
+    };
+
+    async.transform = function (arr, memo, iterator, callback) {
+        if (arguments.length === 3) {
+            callback = iterator;
+            iterator = memo;
+            memo = _isArray(arr) ? [] : {};
+        }
+
+        async.eachOf(arr, function(v, k, cb) {
+            iterator(memo, v, k, cb);
+        }, function(err) {
+            callback(err, memo);
+        });
     };
 
     function _filter(eachfn, arr, iterator, callback) {
@@ -846,15 +858,24 @@ $('#submit').on('click', function() {
         }
     };
 
-    async.auto = function (tasks, callback) {
+    async.auto = function (tasks, concurrency, callback) {
+        if (!callback) {
+            // concurrency is optional, shift the args.
+            callback = concurrency;
+            concurrency = null;
+        }
         callback = _once(callback || noop);
         var keys = _keys(tasks);
         var remainingTasks = keys.length;
         if (!remainingTasks) {
             return callback(null);
         }
+        if (!concurrency) {
+            concurrency = remainingTasks;
+        }
 
         var results = {};
+        var runningTasks = 0;
 
         var listeners = [];
         function addListener(fn) {
@@ -880,6 +901,7 @@ $('#submit').on('click', function() {
         _arrayEach(keys, function (k) {
             var task = _isArray(tasks[k]) ? tasks[k]: [tasks[k]];
             var taskCallback = _restParam(function(err, args) {
+                runningTasks--;
                 if (args.length <= 1) {
                     args = args[0];
                 }
@@ -909,11 +931,12 @@ $('#submit').on('click', function() {
                 }
             }
             function ready() {
-                return _reduce(requires, function (a, x) {
+                return runningTasks < concurrency && _reduce(requires, function (a, x) {
                     return (a && results.hasOwnProperty(x));
                 }, true) && !results.hasOwnProperty(k);
             }
             if (ready()) {
+                runningTasks++;
                 task[task.length - 1](taskCallback, results);
             }
             else {
@@ -921,6 +944,7 @@ $('#submit').on('click', function() {
             }
             function listener() {
                 if (ready()) {
+                    runningTasks++;
                     removeListener(listener);
                     task[task.length - 1](taskCallback, results);
                 }
@@ -1212,8 +1236,17 @@ $('#submit').on('click', function() {
         function _next(q, tasks) {
             return function(){
                 workers -= 1;
+
+                var removed = false;
                 var args = arguments;
                 _arrayEach(tasks, function (task) {
+                    _arrayEach(workersList, function (worker, index) {
+                        if (worker === task && !removed) {
+                            workersList.splice(index, 1);
+                            removed = true;
+                        }
+                    });
+
                     task.callback.apply(task, args);
                 });
                 if (q.tasks.length + workers === 0) {
@@ -1224,6 +1257,7 @@ $('#submit').on('click', function() {
         }
 
         var workers = 0;
+        var workersList = [];
         var q = {
             tasks: [],
             concurrency: concurrency,
@@ -1258,6 +1292,7 @@ $('#submit').on('click', function() {
                             q.empty();
                         }
                         workers += 1;
+                        workersList.push(tasks[0]);
                         var cb = only_once(_next(q, tasks));
                         worker(data, cb);
                     }
@@ -1268,6 +1303,9 @@ $('#submit').on('click', function() {
             },
             running: function () {
                 return workers;
+            },
+            workersList: function () {
+                return workersList;
             },
             idle: function() {
                 return q.tasks.length + workers === 0;
@@ -1397,7 +1435,7 @@ $('#submit').on('click', function() {
             var callback = args.pop();
             var key = hasher.apply(null, args);
             if (key in memo) {
-                async.nextTick(function () {
+                async.setImmediate(function () {
                     callback.apply(null, memo[key]);
                 });
             }
@@ -9316,9 +9354,7 @@ function drainQueue() {
         currentQueue = queue;
         queue = [];
         while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
+            currentQueue[queueIndex].run();
         }
         queueIndex = -1;
         len = queue.length;
@@ -9370,6 +9406,7 @@ process.binding = function (name) {
     throw new Error('process.binding is not supported');
 };
 
+// TODO(shtylman)
 process.cwd = function () { return '/' };
 process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');

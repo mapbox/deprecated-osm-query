@@ -71,7 +71,7 @@ function getQuery (type, u) {
     }
 
     var query = util.format(q, type, u, overpassDate, overpassFilter, overpassBbox); 
-    var url = 'http://overpass.osm.rambler.ru/cgi/interpreter?data='+query; 
+    var url = 'https://www.overpass-api.de/api/interpreter?data='+query; 
     return url;
 }
 
