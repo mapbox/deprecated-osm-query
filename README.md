@@ -6,4 +6,4 @@ Planets, stars, nodes and ways
 * `browserify js/app.js > dist/bundle.js`
 * `serve`
 
-http://mapbox.github.io/osm-query/
+www.mapbox.com/osm-query
