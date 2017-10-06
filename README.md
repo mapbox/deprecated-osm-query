@@ -1,3 +1,5 @@
+![deprecated](https://c1.staticflickr.com/5/4396/36704337791_4268261089_n.jpg)
+
 # osm-query
 Planets, stars, nodes and ways
 
